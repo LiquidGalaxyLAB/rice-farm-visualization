@@ -19,7 +19,7 @@ This project transforms agricultural datasets into an immersive multi-screen sto
 ## GSoC 2026
 
 - **Contributor:** Vinayak Dhaka
-- **Mentor:** Vedant Singh
+- **Mentor:** Vedant Singh, Dev Gadani
 - **Organization:** Liquid Galaxy Lab
 
 ## Setup
