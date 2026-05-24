@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Agra, India</name>
+
+    <Placemark>
+      <name>Agra (Home City)</name>
+      <description>Agra, Uttar Pradesh, India</description>
+      <Point>
+        <coordinates>78.0081,27.1767,0</coordinates>
+      </Point>
+    </Placemark>
+
+  </Document>
+</kml> 
+
