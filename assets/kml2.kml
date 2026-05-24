@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>3D Pyramid – Spain Demo</name>
+
+    <Style id="pyramidStyle">
+      <LineStyle>
+        <color>ff00aaff</color>
+        <width>2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>ccff9900</color>
+      </PolyStyle>
+    </Style>
+
+    <LookAt>
+      <longitude>-3.7038</longitude>
+      <latitude>40.4168</latitude>
+      <range>1200</range>
+      <tilt>65</tilt>
+      <heading>0</heading>
+    </LookAt>
+
+    <Placemark>
+      <name>3D Pyramid</name>
+      <description>3D Pyramid rendered using KML (Spain)</description>
+      <styleUrl>#pyramidStyle</styleUrl>
+
+      <MultiGeometry>
+
+        <!-- BASE -->
+        <Polygon>
+          <altitudeMode>absolute</altitudeMode>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>
+                -3.7088,40.4118,650
+                -3.6988,40.4118,650
+                -3.6988,40.4218,650
+                -3.7088,40.4218,650
+                -3.7088,40.4118,650
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+
+        <!-- SIDE 1 -->
+        <Polygon>
+          <altitudeMode>absolute</altitudeMode>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>
+                -3.7088,40.4118,650
+                -3.6988,40.4118,650
+                -3.7038,40.4168,900
+                -3.7088,40.4118,650
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+
+        <!-- SIDE 2 -->
+        <Polygon>
+          <altitudeMode>absolute</altitudeMode>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>
+                -3.6988,40.4118,650
+                -3.6988,40.4218,650
+                -3.7038,40.4168,900
+                -3.6988,40.4118,650
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+
+        <!-- SIDE 3 -->
+        <Polygon>
+          <altitudeMode>absolute</altitudeMode>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>
+                -3.6988,40.4218,650
+                -3.7088,40.4218,650
+                -3.7038,40.4168,900
+                -3.6988,40.4218,650
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+
+        <!-- SIDE 4 -->
+        <Polygon>
+          <altitudeMode>absolute</altitudeMode>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>
+                -3.7088,40.4218,650
+                -3.7088,40.4118,650
+                -3.7038,40.4168,900
+                -3.7088,40.4218,650
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+
+      </MultiGeometry>
+    </Placemark>
+
+  </Document>
+</kml>
