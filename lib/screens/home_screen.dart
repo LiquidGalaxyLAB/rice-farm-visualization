@@ -41,7 +41,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _checkConnection() async {
-
     try {
       final success = await widget.sshController.connect(
         host: widget.settingsController.lgHost,
@@ -53,8 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       setState(() => _isConnected = success);
     } catch (_) {
       setState(() => _isConnected = false);
-    } finally {
-    }
+    } finally {}
   }
 
   Future<void> _navigateToSettings() async {

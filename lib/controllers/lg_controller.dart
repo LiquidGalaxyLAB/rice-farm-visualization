@@ -93,7 +93,6 @@ class LGController {
       content,
       '/var/www/html/kml/slave_$screen.kml',
     );
-
   }
 
   Future<void> query(String content) async {
@@ -253,7 +252,6 @@ class LGController {
       logoKml,
       '/var/www/html/kml/slave_$targetScreen.kml',
     );
-
 
     await forceRefresh();
   }
