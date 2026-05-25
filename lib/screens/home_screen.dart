@@ -30,7 +30,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isConnected = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -42,7 +41,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _checkConnection() async {
-    setState(() => _isLoading = true);
 
     try {
       final success = await widget.sshController.connect(
@@ -56,7 +54,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (_) {
       setState(() => _isConnected = false);
     } finally {
-      setState(() => _isLoading = false);
     }
   }
 

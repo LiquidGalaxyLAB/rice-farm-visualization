@@ -13,7 +13,6 @@ class LGController {
   final SettingsController _settingsController;
 
   int screenAmount;
-  String? _lastUpdatedKmlPath;
 
   bool get isConnected => _sshController.isConnected;
   String? get lastError => _sshController.lastError;
@@ -95,7 +94,6 @@ class LGController {
       '/var/www/html/kml/slave_$screen.kml',
     );
 
-    _lastUpdatedKmlPath = '/var/www/html/kml/slave_$screen.kml';
   }
 
   Future<void> query(String content) async {
@@ -256,7 +254,6 @@ class LGController {
       '/var/www/html/kml/slave_$targetScreen.kml',
     );
 
-    _lastUpdatedKmlPath = '/var/www/html/kml/slave_$targetScreen.kml';
 
     await forceRefresh();
   }
