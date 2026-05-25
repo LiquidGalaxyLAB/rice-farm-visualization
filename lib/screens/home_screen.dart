@@ -5,7 +5,7 @@ import '../controllers/ssh_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../controllers/lg_controller.dart';
 
-import '../widgets/New_button.dart';
+import '../widgets/new_button.dart';
 import '../widgets/connection_status.dart';
 import '../widgets/entry_animation.dart';
 
@@ -30,7 +30,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isConnected = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -42,8 +41,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _checkConnection() async {
-    setState(() => _isLoading = true);
-
     try {
       final success = await widget.sshController.connect(
         host: widget.settingsController.lgHost,
@@ -55,9 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       setState(() => _isConnected = success);
     } catch (_) {
       setState(() => _isConnected = false);
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    } finally {}
   }
 
   Future<void> _navigateToSettings() async {
