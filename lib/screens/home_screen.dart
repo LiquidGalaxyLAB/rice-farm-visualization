@@ -5,7 +5,7 @@ import '../controllers/ssh_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../controllers/lg_controller.dart';
 
-import '../widgets/New_button.dart';
+import '../widgets/new_button.dart';
 import '../widgets/connection_status.dart';
 import '../widgets/entry_animation.dart';
 
