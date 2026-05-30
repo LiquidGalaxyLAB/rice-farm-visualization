@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'ssh_controller.dart';
 import 'settings_controller.dart';
 
@@ -38,6 +39,7 @@ class LGController {
         password: password,
         rigsNum: screenAmount,
       );
+      await enableSlaveRefresh();
     }
 
     return success;
@@ -103,25 +105,78 @@ class LGController {
     await executeCommand('echo "$content" > /tmp/query.txt');
   }
 
-  //  Future<void> forceRefresh() async {
-  //     if (!isConnected) return;
-
-  //     await executeCommand('touch /var/www/html/kmls.txt');
-  //     // Also trigger slave sync files to force reload
-  //     for (int i = 2; i <= screenAmount; i++) {
-  //       await executeCommand('touch /var/www/html/sync_nlc_$i.php');
-  //     }
-  //     await query(
-  //       'search=http://${_settingsController.lgHost}:81/kmls.txt',
-  //     );
-  //   }
   Future<void> forceRefresh() async {
     if (!isConnected) return;
 
     await executeCommand('touch /var/www/html/kmls.txt');
     await query('search=http://${_settingsController.lgHost}:81/kmls.txt');
-    // Slave screens auto-refresh every 2 seconds via myplaces.kml config
     await Future.delayed(const Duration(seconds: 2));
+  }
+
+  /// Sends KML content to the master screen via kmls.txt
+  Future<void> sendKmlToMaster(
+    String kmlContent, {
+    String filename = 'rice_viz.kml',
+  }) async {
+    if (!isConnected) {
+      throw Exception('Not connected to LG');
+    }
+
+    await _sshController.uploadString(kmlContent, '/var/www/html/$filename');
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    await executeCommand(
+      "echo '\nhttp://${_settingsController.lgHost}:81/$filename' > /var/www/html/kmls.txt",
+    );
+  }
+
+  Future<void> enableSlaveRefresh() async {
+    if (!isConnected) return;
+
+    final String password = _settingsController.lgPassword;
+
+    for (int i = 2; i <= screenAmount; i++) {
+      String search = '<href>##LG_PHPIFACE##kml\\\\/slave_$i.kml<\\\\/href>';
+      String replace =
+          '<href>##LG_PHPIFACE##kml\\\\/slave_$i.kml<\\\\/href>'
+          '<refreshMode>onInterval<\\\\/refreshMode>'
+          '<refreshInterval>2<\\\\/refreshInterval>';
+
+      try {
+        await executeCommand(
+          'sshpass -p $password ssh -t lg$i '
+          '\'echo $password | sudo -S sed -i "s/$search/$replace/" '
+          '~/earth/kml/slave/myplaces.kml\'',
+        );
+      } catch (e) {
+        debugPrint('Failed to enable refresh on slave $i: $e');
+      }
+    }
+  }
+
+  Future<void> disableSlaveRefresh() async {
+    if (!isConnected) return;
+
+    final String password = _settingsController.lgPassword;
+
+    for (int i = 2; i <= screenAmount; i++) {
+      String search =
+          '<href>##LG_PHPIFACE##kml\\\\/slave_$i.kml<\\\\/href>'
+          '<refreshMode>onInterval<\\\\/refreshMode>'
+          '<refreshInterval>2<\\\\/refreshInterval>';
+      String replace = '<href>##LG_PHPIFACE##kml\\\\/slave_$i.kml<\\\\/href>';
+
+      try {
+        await executeCommand(
+          'sshpass -p $password ssh -t lg$i '
+          '\'echo $password | sudo -S sed -i "s/$search/$replace/" '
+          '~/earth/kml/slave/myplaces.kml\'',
+        );
+      } catch (e) {
+        debugPrint('Failed to disable refresh on slave $i: $e');
+      }
+    }
   }
 
   Future<void> sendKml1() async {
@@ -252,6 +307,8 @@ class LGController {
       logoKml,
       '/var/www/html/kml/slave_$targetScreen.kml',
     );
+
+    '/var/www/html/kml/slave_$targetScreen.kml';
 
     await forceRefresh();
   }
