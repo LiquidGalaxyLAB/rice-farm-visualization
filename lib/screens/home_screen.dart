@@ -4,13 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/ssh_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../controllers/lg_controller.dart';
-
-import '../widgets/new_button.dart';
-import '../widgets/connection_status.dart';
-import '../widgets/entry_animation.dart';
-
+import '../services/kml_builder_service.dart';
 import '../theme/app_theme.dart';
+
 import 'settings_screen.dart';
+import 'regions_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final SSHController sshController;
@@ -30,29 +28,33 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isConnected = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.settingsController.lgHost.isNotEmpty &&
         widget.settingsController.lgPassword.isNotEmpty) {
-      _checkConnection();
+      _connectToLG();
     }
   }
 
-  Future<void> _checkConnection() async {
+  Future<void> _connectToLG() async {
+    setState(() => _isLoading = true);
+
     try {
-      final success = await widget.sshController.connect(
+      final success = await widget.lgController.connect(
         host: widget.settingsController.lgHost,
         port: widget.settingsController.lgPort,
         username: widget.settingsController.lgUsername,
         password: widget.settingsController.lgPassword,
       );
-
       setState(() => _isConnected = success);
     } catch (_) {
       setState(() => _isConnected = false);
-    } finally {}
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _navigateToSettings() async {
@@ -67,8 +69,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     if (result == true) {
-      _checkConnection();
+      _connectToLG();
     }
+  }
+
+  void _navigateTo(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   @override
@@ -77,31 +83,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Container(
         color: AppTheme.bgDark,
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Liquid Galaxy Console',
-                        style: Theme.of(context).textTheme.displayMedium,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'System overview & operational controls',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 24),
-                      _buildControlGrid(),
-                    ],
-                  ),
-                ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  _buildConnectionStatus(),
+                  const SizedBox(height: 24),
+                  _buildMenuItems(),
+                  const SizedBox(height: 20),
+                  _buildQuickStats(),
+                  const SizedBox(height: 16),
+                  _buildQuickActions(),
+                  const SizedBox(height: 24),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -109,121 +110,380 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.purple.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.rocket_launch,
-                    color: AppTheme.purple,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    'LG CONTROLLER',
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B5E20).withOpacity(0.3),
+            borderRadius: BorderRadius.circular(14),
           ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 120,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: ConnectionStatus(
-                isConnected: _isConnected,
-                label: _isConnected ? 'CONNECTED' : 'OFFLINE',
-                onSettingsPressed: _navigateToSettings,
+          child: const Icon(Icons.eco, color: Color(0xFF66BB6A), size: 26),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Rice Farm Agriculture',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+              Text(
+                'India Visualization Platform',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: _navigateToSettings,
+          icon: const Icon(Icons.settings, color: AppTheme.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConnectionStatus() {
+    return GestureDetector(
+      onTap: _isConnected ? null : _connectToLG,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: _isConnected
+              ? const Color(0xFF1B5E20).withOpacity(0.2)
+              : Colors.red.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _isConnected
+                ? const Color(0xFF66BB6A).withOpacity(0.3)
+                : Colors.red.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            _isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF66BB6A),
+                    ),
+                  )
+                : Icon(
+                    _isConnected ? Icons.check_circle : Icons.error_outline,
+                    color: _isConnected
+                        ? const Color(0xFF66BB6A)
+                        : Colors.redAccent,
+                    size: 18,
+                  ),
+            const SizedBox(width: 8),
+            Text(
+              _isLoading
+                  ? 'Connecting...'
+                  : _isConnected
+                  ? 'Connected to Liquid Galaxy'
+                  : 'Tap to connect',
+              style: TextStyle(
+                color: _isConnected
+                    ? const Color(0xFF66BB6A)
+                    : Colors.redAccent,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
+            const Spacer(),
+            if (_isConnected)
+              Text(
+                widget.settingsController.lgHost,
+                style: TextStyle(
+                  color: AppTheme.textSecondary.withOpacity(0.6),
+                  fontSize: 11,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItems() {
+    final menuItems = [
+      _MenuItem(
+        icon: Icons.map_outlined,
+        title: 'Major Rice Regions',
+        subtitle: 'Explore top rice-producing states',
+        color: const Color(0xFF66BB6A),
+        bgColor: const Color(0xFF1B5E20),
+        onTap: () {
+          _navigateTo(RegionsScreen(lgController: widget.lgController));
+        },
+      ),
+      _MenuItem(
+        icon: Icons.grass,
+        title: 'Seasonal Crop Cycle',
+        subtitle: 'View Kharif and Rabi patterns',
+        color: const Color(0xFFFFA726),
+        bgColor: const Color(0xFFE65100),
+        onTap: () {
+          _showComingSoon('Crop Cycle');
+        },
+      ),
+      _MenuItem(
+        icon: Icons.water_drop_outlined,
+        title: 'Irrigation & Rainfall',
+        subtitle: 'Analyze water management systems',
+        color: const Color(0xFF42A5F5),
+        bgColor: const Color(0xFF0D47A1),
+        onTap: () {
+          _showComingSoon('Irrigation');
+        },
+      ),
+      _MenuItem(
+        icon: Icons.route,
+        title: 'Guided Tours',
+        subtitle: 'Take curated visualization tours',
+        color: const Color(0xFFAB47BC),
+        bgColor: const Color(0xFF4A148C),
+        onTap: () {
+          _showComingSoon('Tours');
+        },
+      ),
+    ];
+
+    return Column(
+      children: menuItems.map((item) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _buildMenuCard(item),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildMenuCard(_MenuItem item) {
+    return GestureDetector(
+      onTap: _isConnected ? item.onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: item.bgColor.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                item.icon,
+                color: _isConnected ? item.color : item.color.withOpacity(0.4),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      color: _isConnected
+                          ? AppTheme.textPrimary
+                          : AppTheme.textSecondary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.subtitle,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary.withOpacity(
+                        _isConnected ? 1 : 0.5,
+                      ),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppTheme.textSecondary.withOpacity(
+                _isConnected ? 0.5 : 0.2,
+              ),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          _buildStatItem('129.8M', 'Tonnes', const Color(0xFF66BB6A)),
+          _buildDivider(),
+          _buildStatItem('48.3M', 'Hectares', const Color(0xFF42A5F5)),
+          _buildDivider(),
+          _buildStatItem('2.69', 'T/Ha Yield', const Color(0xFFFFA726)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String value, String label, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildControlGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
-
-        final buttons = [
-          NewButton(
-            icon: Icons.place,
-            label: 'Fly to Home\n(Agra)',
-            color: Colors.green,
-            onPressed: _isConnected ? widget.lgController.sendKml1 : null,
-          ),
-          NewButton(
-            icon: Icons.change_history,
-            label: 'Show 3D\nPyramid',
-            color: AppTheme.purple,
-            onPressed: _isConnected ? widget.lgController.sendKml2 : null,
-          ),
-          NewButton(
-            icon: Icons.image,
-            label: 'Show LG Logo',
-            color: Colors.blue,
-            onPressed: _isConnected
-                ? () => widget.lgController.sendLogoToLeftScreen(
-                    assetPath: 'assets/logo.png',
-                    logoScreenNumber: 3,
-                  )
-                : null,
-          ),
-          NewButton(
-            icon: Icons.hide_image,
-            label: 'Clear Logo',
-            color: Colors.redAccent,
-            onPressed: _isConnected
-                ? () => widget.lgController.clearLogoFromLeftScreen(
-                    logoScreenNumber: 3,
-                  )
-                : null,
-          ),
-          NewButton(
-            icon: Icons.clear_all,
-            label: 'Clean KMLs',
-            color: Colors.pink,
-            onPressed: _isConnected ? widget.lgController.clearKmls : null,
-          ),
-          NewButton(
-            icon: Icons.settings,
-            label: 'Settings',
-            color: Colors.grey,
-            onPressed: _navigateToSettings,
-          ),
-        ];
-
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: buttons
-              .asMap()
-              .entries
-              .map((e) => EntryAnimation(index: e.key, child: e.value))
-              .toList(),
-        );
-      },
+  Widget _buildDivider() {
+    return Container(
+      height: 30,
+      width: 1,
+      color: Colors.white.withOpacity(0.08),
     );
   }
+
+  Widget _buildQuickActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.map,
+            label: 'Show Production',
+            color: const Color(0xFF66BB6A),
+            onTap: _isConnected
+                ? () async {
+                    final kmlBuilder = KmlBuilderService();
+                    final kml = kmlBuilder.buildProductionKml();
+                    await widget.lgController.sendKmlToMaster(kml);
+                    await widget.lgController.query(
+                      kmlBuilder.buildLookAt(
+                        lat: 22.0,
+                        lng: 82.0,
+                        range: 3500000,
+                        tilt: 30,
+                      ),
+                    );
+                  }
+                : null,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.clear_all,
+            label: 'Clean KMLs',
+            color: Colors.redAccent,
+            onTap: _isConnected ? () => widget.lgController.clearKmls() : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(onTap != null ? 0.15 : 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withOpacity(onTap != null ? 0.3 : 0.1),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: color.withOpacity(onTap != null ? 1 : 0.3),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color.withOpacity(onTap != null ? 1 : 0.3),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature — coming soon!'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+}
+
+class _MenuItem {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final Color bgColor;
+  final VoidCallback onTap;
+
+  _MenuItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.bgColor,
+    required this.onTap,
+  });
 }
