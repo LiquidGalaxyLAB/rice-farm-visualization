@@ -40,4 +40,191 @@ class NarrationScripts {
 
   static const String tourClosing =
       'As we look across India\'s vast rice belt, we see a story of diversity. From the irrigated fields of Punjab to the rain-fed paddies of Odisha, rice connects millions of farmers and feeds over a billion people.';
+
+  static const List<Map<String, dynamic>> riceBeltTour = [
+    {
+      'title': 'India Overview',
+      'narration': indiaOverview,
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 5000000.0,
+      'tilt': 0.0,
+      'heading': 0.0,
+      'kmlAction': 'production',
+    },
+    {
+      'title': 'West Bengal',
+      'narration': westBengal,
+      'lat': 22.9868,
+      'lng': 87.8550,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+    {
+      'title': 'Punjab',
+      'narration': punjab,
+      'lat': 31.1471,
+      'lng': 75.3412,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+    {
+      'title': 'Uttar Pradesh',
+      'narration': uttarPradesh,
+      'lat': 26.8467,
+      'lng': 80.9462,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+    {
+      'title': 'Tamil Nadu',
+      'narration': tamilNadu,
+      'lat': 11.1271,
+      'lng': 78.6569,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+    {
+      'title': 'Crop Cycle',
+      'narration': cropCycleOverview,
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 4000000.0,
+      'tilt': 20.0,
+      'heading': 0.0,
+      'kmlAction': 'production',
+    },
+    {
+      'title': 'Tour Complete',
+      'narration': tourClosing,
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 5000000.0,
+      'tilt': 0.0,
+      'heading': 0.0,
+      'kmlAction': 'production',
+    },
+  ];
+
+  static const List<Map<String, dynamic>> irrigationTour = [
+    {
+      'title': 'Irrigation Overview',
+      'narration': irrigationOverview,
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 5000000.0,
+      'tilt': 0.0,
+      'heading': 0.0,
+      'kmlAction': 'irrigation',
+    },
+    {
+      'title': 'Punjab',
+      'narration':
+          'Punjab has the highest irrigation coverage in India at nearly 99 percent. With only 649 millimeters of annual rainfall, the state depends almost entirely on tubewells and canals to sustain its massive rice production.',
+      'lat': 31.1471,
+      'lng': 75.3412,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+    {
+      'title': 'Uttar Pradesh',
+      'narration':
+          'Uttar Pradesh uses a combination of tubewells and canal networks to irrigate over 76 percent of its rice area. The extensive Gangetic canal system built during the British era still forms the backbone of irrigation here.',
+      'lat': 26.8467,
+      'lng': 80.9462,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+    {
+      'title': 'Assam',
+      'narration':
+          'Assam receives the highest rainfall among all rice states at over 2800 millimeters annually. Yet only 13 percent of its area is irrigated. The Brahmaputra floods both nourish and devastate its paddy fields each year.',
+      'lat': 26.2006,
+      'lng': 92.9376,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+    {
+      'title': 'Tamil Nadu',
+      'narration':
+          'Tamil Nadu relies heavily on tank irrigation, a traditional system of interconnected reservoirs. The Cauvery delta region uses a mix of canals, tanks, and tubewells to support its unique Rabi season rice cultivation.',
+      'lat': 11.1271,
+      'lng': 78.6569,
+      'range': 800000.0,
+      'tilt': 45.0,
+      'heading': 0.0,
+      'kmlAction': 'state',
+    },
+  ];
+
+  static const List<Map<String, dynamic>> seasonalFarmingTour = [
+    {
+      'title': 'Seasonal Overview',
+      'narration': cropCycleOverview,
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 5000000.0,
+      'tilt': 0.0,
+      'heading': 0.0,
+      'kmlAction': 'sowing',
+    },
+    {
+      'title': 'Sowing Season',
+      'narration':
+          'The rice season begins in June and July with the arrival of the monsoon. Farmers prepare nursery beds and sow seeds. Across India, millions of small paddy fields are flooded and seeded as the rains arrive.',
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 4000000.0,
+      'tilt': 20.0,
+      'heading': 0.0,
+      'kmlAction': 'sowing',
+    },
+    {
+      'title': 'Transplanting',
+      'narration':
+          'In July and August, young seedlings are carefully uprooted from nursery beds and transplanted into flooded paddy fields. This labor-intensive process is still done by hand across most of India.',
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 4000000.0,
+      'tilt': 20.0,
+      'heading': 30.0,
+      'kmlAction': 'transplanting',
+    },
+    {
+      'title': 'Growth Period',
+      'narration':
+          'From August to September, the rice plants enter their growth phase. The fields remain flooded as the plants develop grain heads. This is when the landscape turns a lush, vibrant green across the rice belt.',
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 4000000.0,
+      'tilt': 20.0,
+      'heading': 60.0,
+      'kmlAction': 'growth',
+    },
+    {
+      'title': 'Harvest Time',
+      'narration':
+          'October and November bring the harvest. The fields turn golden as the grain matures. Farmers drain the paddies and harvest the rice, completing one cycle of India\'s most important food crop.',
+      'lat': 22.0,
+      'lng': 82.0,
+      'range': 4000000.0,
+      'tilt': 20.0,
+      'heading': 90.0,
+      'kmlAction': 'harvest',
+    },
+  ];
 }

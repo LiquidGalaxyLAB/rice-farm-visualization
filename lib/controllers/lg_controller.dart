@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'ssh_controller.dart';
 import 'settings_controller.dart';
+import '../services/kml_builder_service.dart';
 
 class LGController {
   LGController({
@@ -222,6 +223,83 @@ class LGController {
     }
   }
 
+  /// Shows branding (logo + title) on the left slave screen
+  /// Shows project logo + title on the left slave screen
+  Future<void> showBranding() async {
+    if (!isConnected) return;
+
+    final logoUrl = 'http://${_settingsController.lgHost}:81/kml/logo.png';
+
+    // Upload project logo
+    await _sshController.uploadAsset(
+      'assets/logo.png',
+      '/var/www/html/kml/logo.png',
+    );
+
+    final kmlBuilder = KmlBuilderService();
+    final brandingKml = kmlBuilder.buildBrandingOverlay(logoUrl);
+    await sendKMLToSlave(firstScreen, brandingKml);
+  }
+
+  /// Shows a dashboard image on the right slave screen
+  /// Shows a dashboard image on the right slave screen
+  Future<void> showDashboard(String assetPath) async {
+    if (!isConnected) return;
+
+    final rightScreen = lastScreen == 1 ? 2 : lastScreen;
+    final dashUrl = 'http://${_settingsController.lgHost}:81/kml/dashboard.png';
+
+    // Clear the old dashboard first
+    final blankKml =
+        '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document id="slave_$rightScreen">
+  </Document>
+</kml>''';
+    await sendKMLToSlave(rightScreen, blankKml);
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Upload the new dashboard image
+    await _sshController.uploadAsset(
+      assetPath,
+      '/var/www/html/kml/dashboard.png',
+    );
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Create ScreenOverlay KML
+    final dashKml =
+        '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Dashboard</name>
+    <ScreenOverlay>
+      <name>Stats Dashboard</name>
+      <Icon>
+        <href>$dashUrl</href>
+      </Icon>
+      <color>ffffffff</color>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+      <size x="0.5" y="0.85" xunits="fraction" yunits="fraction"/>
+    </ScreenOverlay>
+  </Document>
+</kml>''';
+
+    await sendKMLToSlave(rightScreen, dashKml);
+  }
+
+  /// Shows both branding and stats
+  /// Shows both branding and dashboard
+  Future<void> showSideScreens({
+    String dashboardAsset = 'assets/dashboards/dashboard_production.png',
+  }) async {
+    await showBranding();
+    await Future.delayed(const Duration(milliseconds: 500));
+    await showDashboard(dashboardAsset);
+  }
+
   Future<void> sendKml1() async {
     if (!isConnected) {
       throw Exception('Not connected to LG');
@@ -280,15 +358,46 @@ class LGController {
     );
   }
 
+  //   Future<void> clearKmls({bool keepLogos = true}) async {
+  //     if (!isConnected) {
+  //       throw Exception('Not connected to LG');
+  //     }
+
+  //     await query('exittour=true');
+  //     await Future.delayed(const Duration(milliseconds: 300));
+
+  //     await executeCommand('> /var/www/html/kmls.txt');
+  //     await Future.delayed(const Duration(milliseconds: 300));
+
+  //     final logoScreen = getLogoScreen();
+
+  //     for (int i = 2; i <= screenAmount; i++) {
+  //       if (keepLogos && i == logoScreen) continue;
+
+  //       final blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
+  // <kml xmlns="http://www.opengis.net/kml/2.2">
+  //   <Document id="slave_$i">
+  //   </Document>
+  // </kml>''';
+
+  //       await _sshController.uploadString(
+  //         blankKml,
+  //         '/var/www/html/kml/slave_$i.kml',
+  //       );
+
+  //       await Future.delayed(const Duration(milliseconds: 200));
+  //     }
+  //   }
   Future<void> clearKmls({bool keepLogos = true}) async {
     if (!isConnected) {
-      throw Exception('Not connected to LG');
+      await reconnect();
     }
 
-    await query('exittour=true');
+    await safeQuery('exittour=true');
     await Future.delayed(const Duration(milliseconds: 300));
 
-    await executeCommand('> /var/www/html/kmls.txt');
+    await safeExecute('> /var/www/html/kmls.txt');
+    await safeExecute('rm -f /var/www/html/kml/dashboard.png');
     await Future.delayed(const Duration(milliseconds: 300));
 
     final logoScreen = getLogoScreen();
@@ -303,10 +412,18 @@ class LGController {
   </Document>
 </kml>''';
 
-      await _sshController.uploadString(
-        blankKml,
-        '/var/www/html/kml/slave_$i.kml',
-      );
+      try {
+        await _sshController.uploadString(
+          blankKml,
+          '/var/www/html/kml/slave_$i.kml',
+        );
+      } catch (e) {
+        await reconnect();
+        await _sshController.uploadString(
+          blankKml,
+          '/var/www/html/kml/slave_$i.kml',
+        );
+      }
 
       await Future.delayed(const Duration(milliseconds: 200));
     }
