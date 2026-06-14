@@ -9,6 +9,10 @@ import '../theme/app_theme.dart';
 
 import 'settings_screen.dart';
 import 'regions_screen.dart';
+import 'crop_cycle_screen.dart';
+import 'irrigation_screen.dart';
+import 'tours_screen.dart';
+import 'maps_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final SSHController sshController;
@@ -230,7 +234,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: const Color(0xFFFFA726),
         bgColor: const Color(0xFFE65100),
         onTap: () {
-          _showComingSoon('Crop Cycle');
+          _navigateTo(CropCycleScreen(lgController: widget.lgController));
         },
       ),
       _MenuItem(
@@ -240,7 +244,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: const Color(0xFF42A5F5),
         bgColor: const Color(0xFF0D47A1),
         onTap: () {
-          _showComingSoon('Irrigation');
+          _navigateTo(IrrigationScreen(lgController: widget.lgController));
         },
       ),
       _MenuItem(
@@ -250,7 +254,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: const Color(0xFFAB47BC),
         bgColor: const Color(0xFF4A148C),
         onTap: () {
-          _showComingSoon('Tours');
+          _navigateTo(ToursScreen(lgController: widget.lgController));
+        },
+      ),
+      _MenuItem(
+        icon: Icons.map,
+        title: 'Synced Navigation',
+        subtitle: 'Control LG with Google Maps',
+        color: const Color(0xFF26A69A),
+        bgColor: const Color(0xFF004D40),
+        onTap: () {
+          _navigateTo(MapsScreen(lgController: widget.lgController));
         },
       ),
     ];
@@ -383,38 +397,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildQuickActions() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.map,
-            label: 'Show Production',
-            color: const Color(0xFF66BB6A),
-            onTap: _isConnected
-                ? () async {
-                    final kmlBuilder = KmlBuilderService();
-                    final kml = kmlBuilder.buildProductionKml();
-                    await widget.lgController.sendKmlToMaster(kml);
-                    await widget.lgController.query(
-                      kmlBuilder.buildLookAt(
-                        lat: 22.0,
-                        lng: 82.0,
-                        range: 3500000,
-                        tilt: 30,
-                      ),
-                    );
-                  }
-                : null,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                icon: Icons.map,
+                label: 'Show Production',
+                color: const Color(0xFF66BB6A),
+                onTap: _isConnected
+                    ? () async {
+                        final kmlBuilder = KmlBuilderService();
+                        final kml = kmlBuilder.buildProductionHeatmapKml();
+                        await widget.lgController.sendKmlToMaster(kml);
+                        await widget.lgController.query(
+                          kmlBuilder.buildLookAt(
+                            lat: 22.0,
+                            lng: 82.0,
+                            range: 3500000,
+                            tilt: 30,
+                          ),
+                        );
+                        await widget.lgController.showDashboard(
+                          'assets/dashboards/dashboard_production.png',
+                        );
+                      }
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildActionButton(
+                icon: Icons.tv,
+                label: 'Side Screens',
+                color: const Color(0xFFAB47BC),
+                onTap: _isConnected
+                    ? () => widget.lgController.showSideScreens()
+                    : null,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.clear_all,
-            label: 'Clean KMLs',
-            color: Colors.redAccent,
-            onTap: _isConnected ? () => widget.lgController.clearKmls() : null,
-          ),
+        const SizedBox(height: 10),
+        _buildActionButton(
+          icon: Icons.clear_all,
+          label: 'Clean KMLs',
+          color: Colors.redAccent,
+          onTap: _isConnected
+              ? () => widget.lgController.clearKmls(keepLogos: false)
+              : null,
         ),
       ],
     );
@@ -456,15 +488,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature — coming soon!'),
-        duration: const Duration(seconds: 1),
       ),
     );
   }

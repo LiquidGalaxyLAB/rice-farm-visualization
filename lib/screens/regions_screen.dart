@@ -4,6 +4,8 @@ import '../services/kml_builder_service.dart';
 import '../data/rice_states.dart';
 import '../models/state_data.dart';
 import '../theme/app_theme.dart';
+import '../services/tts_service.dart';
+import '../data/narration_scripts.dart';
 
 class RegionsScreen extends StatefulWidget {
   final LGController lgController;
@@ -18,26 +20,68 @@ class _RegionsScreenState extends State<RegionsScreen> {
   final KmlBuilderService _kmlBuilder = KmlBuilderService();
   bool _isLoading = false;
   String? _activeState;
+  final TtsService _tts = TtsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _tts.init();
+  }
+
+  @override
+  void dispose() {
+    _tts.dispose();
+    super.dispose();
+  }
 
   Future<void> _showAllStates() async {
     setState(() => _isLoading = true);
     try {
-      await widget.lgController.executeCommand('> /var/www/html/kmls.txt');
+      await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
       await Future.delayed(const Duration(milliseconds: 300));
 
       final kml = _kmlBuilder.buildProductionKml();
       await widget.lgController.sendKmlToMaster(kml);
-      await widget.lgController.query(
+      await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 3500000, tilt: 30),
       );
       setState(() => _activeState = null);
+      await widget.lgController.showDashboard(
+        'assets/dashboards/dashboard_production.png',
+      );
     } catch (e) {
       _showError('Failed to load: $e');
     } finally {
       setState(() => _isLoading = false);
     }
   }
+  // Future<void> _flyToState(StateData state) async {
+  //     setState(() {
+  //       _isLoading = true;
+  //       _activeState = state.name;
+  //     });
+  //     try {
+  //       await widget.lgController.safeExecute(
+  //         '> /var/www/html/kmls.txt',
+  //       );
+  //       await Future.delayed(const Duration(milliseconds: 300));
 
+  //       final kml = _kmlBuilder.buildStateFlyToKml(state);
+  //       await widget.lgController.sendKmlToMaster(kml);
+  //       await widget.lgController.safeQuery(
+  //         _kmlBuilder.buildLookAt(
+  //           lat: state.latitude,
+  //           lng: state.longitude,
+  //           range: 800000,
+  //           tilt: 45,
+  //         ),
+  //       );
+  //     } catch (e) {
+  //       _showError('Failed to fly to ${state.name}: $e');
+  //     } finally {
+  //       setState(() => _isLoading = false);
+  //     }
+  //   }
   Future<void> _flyToState(StateData state) async {
     setState(() {
       _isLoading = true;
@@ -57,10 +101,49 @@ class _RegionsScreenState extends State<RegionsScreen> {
           tilt: 45,
         ),
       );
+
+      // Play narration for this state
+      final narration = _getNarration(state.name);
+      if (narration != null) {
+        await _tts.speak(narration);
+      }
+
+      // Update right screen dashboard
+      final safeName = state.name.toLowerCase().replaceAll(' ', '_');
+      await widget.lgController.showDashboard(
+        'assets/dashboards/dashboard_$safeName.png',
+      );
     } catch (e) {
       _showError('Failed to fly to ${state.name}: $e');
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  String? _getNarration(String stateName) {
+    switch (stateName) {
+      case 'West Bengal':
+        return NarrationScripts.westBengal;
+      case 'Uttar Pradesh':
+        return NarrationScripts.uttarPradesh;
+      case 'Punjab':
+        return NarrationScripts.punjab;
+      case 'Andhra Pradesh':
+        return NarrationScripts.andhraPradesh;
+      case 'Tamil Nadu':
+        return NarrationScripts.tamilNadu;
+      case 'Odisha':
+        return NarrationScripts.odisha;
+      case 'Bihar':
+        return NarrationScripts.bihar;
+      case 'Chhattisgarh':
+        return NarrationScripts.chhattisgarh;
+      case 'Assam':
+        return NarrationScripts.assam;
+      case 'Jharkhand':
+        return NarrationScripts.jharkhand;
+      default:
+        return null;
     }
   }
 
@@ -113,7 +196,10 @@ class _RegionsScreenState extends State<RegionsScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              _tts.stop();
+              Navigator.pop(context);
+            },
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -138,6 +224,29 @@ class _RegionsScreenState extends State<RegionsScreen> {
               ),
             ),
           ),
+          GestureDetector(
+            onTap: () {
+              _tts.stop();
+              setState(() {});
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _tts.isSpeaking
+                    ? Colors.redAccent.withOpacity(0.15)
+                    : AppTheme.surface,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                _tts.isSpeaking ? Icons.volume_off : Icons.volume_up,
+                color: _tts.isSpeaking
+                    ? Colors.redAccent
+                    : AppTheme.textSecondary,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           if (_isLoading)
             const SizedBox(
               width: 20,
@@ -192,7 +301,10 @@ class _RegionsScreenState extends State<RegionsScreen> {
               icon: Icons.clear_all,
               color: Colors.redAccent,
               filled: false,
-              onTap: () => widget.lgController.clearKmls(),
+              onTap: () async {
+                await widget.lgController.clearKmls();
+                setState(() => _activeState = null);
+              },
             ),
           ),
         ],
