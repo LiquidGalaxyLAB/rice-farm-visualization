@@ -144,6 +144,36 @@ class KmlBuilderService {
     return _wrapInKmlDocument(state.name, placemark + label);
   }
 
+  /// Builds KML highlighting a single state in blue (for irrigation)
+  String buildStateBlueKml(StateData state) {
+    final coords = StateBoundaries.boundaries[state.name];
+    if (coords == null || coords.isEmpty) return '';
+
+    final ratio = (state.rainfall / 3000).clamp(0.0, 1.0);
+    final blueVal = (130 + (125 * ratio)).toInt();
+    final color = 'cc${blueVal.toRadixString(16).padLeft(2, '0')}2200';
+
+    final placemark = _buildStatePolygon(
+      name: state.name,
+      coords: coords,
+      color: color,
+      height: (state.rainfall * 20).toInt().clamp(30000, 200000),
+      borderColor: 'ffaa5500',
+      description:
+          'Rainfall: ${state.rainfall.toInt()}mm/year\\n'
+          'Irrigated: ${state.irrigatedPercent}%',
+    );
+
+    final label = _buildPlacemark(
+      name: '${state.name} - ${state.rainfall.toInt()}mm',
+      lat: state.latitude,
+      lng: state.longitude,
+      description: 'Irrigated: ${state.irrigatedPercent}%',
+    );
+
+    return _wrapInKmlDocument('Irrigation: ${state.name}', placemark + label);
+  }
+
   /// Builds KML for a specific crop cycle stage
   String buildCropCycleKml(String stageName, String color) {
     final states = RiceStates.states
@@ -204,10 +234,10 @@ class KmlBuilderService {
       if (coords == null || coords.isEmpty) continue;
 
       final ratio = (state.rainfall / 3000).clamp(0.0, 1.0);
-      final blue = (100 + (155 * ratio)).toInt();
-      final green = (50 + (100 * (1 - ratio))).toInt();
+      final blueVal = (120 + (135 * ratio)).toInt();
+      final greenVal = ((1 - ratio) * 60).toInt();
       final color =
-          'cc${blue.toRadixString(16).padLeft(2, '0')}${green.toRadixString(16).padLeft(2, '0')}22';
+          'cc${blueVal.toRadixString(16).padLeft(2, '0')}${greenVal.toRadixString(16).padLeft(2, '0')}11';
       final height = (state.rainfall * 25).toInt();
 
       placemarks += _buildStatePolygon(

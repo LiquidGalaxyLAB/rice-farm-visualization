@@ -6,6 +6,7 @@ import '../controllers/settings_controller.dart';
 import '../controllers/lg_controller.dart';
 import '../services/kml_builder_service.dart';
 import '../theme/app_theme.dart';
+import 'about_screen.dart';
 
 import 'settings_screen.dart';
 import 'regions_screen.dart';
@@ -142,6 +143,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
+        ),
+        IconButton(
+          onPressed: () => _navigateTo(const AboutScreen()),
+          icon: const Icon(Icons.info_outline, color: AppTheme.textSecondary),
         ),
         IconButton(
           onPressed: _navigateToSettings,
