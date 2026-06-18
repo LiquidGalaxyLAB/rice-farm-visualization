@@ -358,36 +358,6 @@ class LGController {
     );
   }
 
-  //   Future<void> clearKmls({bool keepLogos = true}) async {
-  //     if (!isConnected) {
-  //       throw Exception('Not connected to LG');
-  //     }
-
-  //     await query('exittour=true');
-  //     await Future.delayed(const Duration(milliseconds: 300));
-
-  //     await executeCommand('> /var/www/html/kmls.txt');
-  //     await Future.delayed(const Duration(milliseconds: 300));
-
-  //     final logoScreen = getLogoScreen();
-
-  //     for (int i = 2; i <= screenAmount; i++) {
-  //       if (keepLogos && i == logoScreen) continue;
-
-  //       final blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
-  // <kml xmlns="http://www.opengis.net/kml/2.2">
-  //   <Document id="slave_$i">
-  //   </Document>
-  // </kml>''';
-
-  //       await _sshController.uploadString(
-  //         blankKml,
-  //         '/var/www/html/kml/slave_$i.kml',
-  //       );
-
-  //       await Future.delayed(const Duration(milliseconds: 200));
-  //     }
-  //   }
   Future<void> clearKmls({bool keepLogos = true}) async {
     if (!isConnected) {
       await reconnect();
@@ -467,6 +437,8 @@ class LGController {
       logoKml,
       '/var/www/html/kml/slave_$targetScreen.kml',
     );
+
+    '/var/www/html/kml/slave_$targetScreen.kml';
 
     await forceRefresh();
   }

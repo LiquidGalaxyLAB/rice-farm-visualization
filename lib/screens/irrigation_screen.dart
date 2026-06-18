@@ -72,7 +72,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
       await Future.delayed(const Duration(milliseconds: 300));
 
-      final kml = _kmlBuilder.buildStateFlyToKml(state);
+      final kml = _kmlBuilder.buildStateBlueKml(state);
       await widget.lgController.sendKmlToMaster(kml);
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(

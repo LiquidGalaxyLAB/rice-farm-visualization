@@ -86,7 +86,7 @@ class _ToursScreenState extends State<ToursScreen> {
           (s) => s.name == data['title'],
           orElse: () => RiceStates.states.first,
         );
-        kmlContent = _kmlBuilder.buildStateFlyToKml(state);
+        kmlContent = _kmlBuilder.buildStateBlueKml(state);
       }
 
       return TourStep(
