@@ -65,7 +65,7 @@ class _NewButtonState extends State<NewButton>
                 AppTheme.surface.withOpacity(0.90),
               ],
             ),
-            border: Border.all(color: Colors.white.withOpacity(0.06), width: 1),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.35),

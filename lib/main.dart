@@ -7,6 +7,7 @@ import 'controllers/lg_controller.dart';
 
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,11 +49,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'LG Controller',
-      theme: AppTheme.darkTheme,
-      home: HomeScreen(
-        sshController: sshController,
-        settingsController: settingsController,
-        lgController: lgController,
+      theme: AppTheme.theme,
+      home: SplashScreen(
+        nextScreen: HomeScreen(
+          sshController: sshController,
+          settingsController: settingsController,
+          lgController: lgController,
+        ),
       ),
     );
   }

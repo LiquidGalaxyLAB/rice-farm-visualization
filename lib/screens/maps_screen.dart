@@ -165,47 +165,6 @@ class _MapsScreenState extends State<MapsScreen> {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              setState(() => _isSyncing = !_isSyncing);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: _isSyncing
-                    ? const Color(0xFF66BB6A).withOpacity(0.15)
-                    : Colors.redAccent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _isSyncing
-                      ? const Color(0xFF66BB6A).withOpacity(0.3)
-                      : Colors.redAccent.withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _isSyncing ? Icons.sync : Icons.sync_disabled,
-                    color: _isSyncing
-                        ? const Color(0xFF66BB6A)
-                        : Colors.redAccent,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _isSyncing ? 'Synced' : 'Paused',
-                    style: TextStyle(
-                      color: _isSyncing
-                          ? const Color(0xFF66BB6A)
-                          : Colors.redAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -270,7 +229,7 @@ class _MapsScreenState extends State<MapsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.bgDark,
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
@@ -321,7 +280,7 @@ class _MapsScreenState extends State<MapsScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,

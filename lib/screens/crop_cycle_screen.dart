@@ -326,7 +326,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                 border: Border.all(
                   color: isActive
                       ? accentColor.withOpacity(0.4)
-                      : Colors.white.withOpacity(0.06),
+                      : Colors.grey.shade200,
                 ),
               ),
               child: Column(
@@ -370,7 +370,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: const Center(
           child: Text(
@@ -490,7 +490,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,

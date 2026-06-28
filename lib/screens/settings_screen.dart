@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../controllers/ssh_controller.dart';
 import '../controllers/settings_controller.dart';
-
 import '../helpers/debug_helper.dart';
-import '../widgets/custom_glass_card.dart';
-import '../widgets/custom_input_field.dart';
+import '../theme/app_theme.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final SSHController sshController;
@@ -37,20 +35,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    final s = widget.settingsController;
     _hostController = TextEditingController(
-      text: widget.settingsController.lgHost,
+      text: s.lgHost.isNotEmpty && s.lgHost != '192.168.1.7' ? s.lgHost : '',
     );
     _portController = TextEditingController(
-      text: widget.settingsController.lgPort.toString(),
+      text: s.lgPort != 22 ? s.lgPort.toString() : '',
     );
     _usernameController = TextEditingController(
-      text: widget.settingsController.lgUsername,
+      text: s.lgUsername.isNotEmpty && s.lgUsername != 'lg' ? s.lgUsername : '',
     );
     _passwordController = TextEditingController(
-      text: widget.settingsController.lgPassword,
+      text: s.lgPassword.isNotEmpty && s.lgPassword != '123'
+          ? s.lgPassword
+          : '',
     );
     _rigsNumController = TextEditingController(
-      text: widget.settingsController.lgRigsNum.toString(),
+      text: s.lgRigsNum != 3 ? s.lgRigsNum.toString() : '',
     );
   }
 
@@ -82,11 +83,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'Settings saved!',
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.green.shade600,
+          content: const Text('Settings saved!'),
+          backgroundColor: AppTheme.green,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -99,169 +97,224 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Error: $e',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.red.shade600,
+          content: Text('Error: $e'),
+          backgroundColor: AppTheme.red,
           behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        title: const Text('Configuration'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          gradient: RadialGradient(
-            center: Alignment.topLeft,
-            radius: 1.5,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).scaffoldBackgroundColor,
-            ],
+        title: const Text(
+          'Configuration',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  CustomGlassCard(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: AppTheme.bgLight,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Connection Card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.dns, color: Color(0xFF3B82F6)),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Master Node Connection',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        CustomInputField(
-                          controller: _hostController,
-                          label: 'IP Address',
-                          icon: Icons.computer,
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Required' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        CustomInputField(
-                          controller: _portController,
-                          label: 'SSH Port',
-                          icon: Icons.settings_ethernet,
-                          keyboardType: TextInputType.number,
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Required' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        CustomInputField(
-                          controller: _usernameController,
-                          label: 'Username',
-                          icon: Icons.person,
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Required' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        CustomInputField(
-                          controller: _passwordController,
-                          label: 'Password',
-                          icon: Icons.lock,
-                          obscureText: _obscurePassword,
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Required' : null,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Colors.white54,
-                            ),
-                            onPressed: () {
-                              setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              );
-                            },
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.dns,
+                            color: AppTheme.blue,
+                            size: 24,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        CustomInputField(
-                          controller: _rigsNumController,
-                          label: 'Number of Rigs',
-                          icon: Icons.monitor,
-                          keyboardType: TextInputType.number,
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Required' : null,
+                        const SizedBox(width: 14),
+                        const Text(
+                          'Master Node Connection',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  Center(
-                    child: SizedBox(
-                      width: 240,
-                      child: ElevatedButton.icon(
-                        onPressed: _isLoading ? null : _saveSettings,
-                        icon: const Icon(
-                          Icons.rocket_launch,
-                          size: 22,
-                          color: Colors.white,
+                    const SizedBox(height: 28),
+                    _buildInputField(
+                      controller: _hostController,
+                      label: 'IP Address',
+                      hint: '192.168.1.7',
+                      icon: Icons.computer,
+                    ),
+                    const SizedBox(height: 18),
+                    _buildInputField(
+                      controller: _portController,
+                      label: 'SSH Port',
+                      hint: '22',
+                      icon: Icons.settings_ethernet,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 18),
+                    _buildInputField(
+                      controller: _usernameController,
+                      label: 'Username',
+                      hint: 'lg',
+                      icon: Icons.person,
+                    ),
+                    const SizedBox(height: 18),
+                    _buildInputField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      hint: 'Enter password',
+                      icon: Icons.lock,
+                      obscureText: _obscurePassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: AppTheme.textSecondary,
                         ),
-                        label: const Text(
-                          'Connect to LG',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 18,
-                            horizontal: 20,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 18),
+                    _buildInputField(
+                      controller: _rigsNumController,
+                      label: 'Number of Screens',
+                      hint: '3',
+                      icon: Icons.monitor,
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 32),
+              // Connect Button
+              SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _saveSettings,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.rocket_launch, size: 22),
+                  label: Text(
+                    _isLoading ? 'Connecting...' : 'Connect to LG',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 16,
+        ),
+        hintStyle: TextStyle(
+          color: AppTheme.textSecondary.withOpacity(0.4),
+          fontSize: 16,
+        ),
+        prefixIcon: Icon(icon, color: AppTheme.blue, size: 22),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: AppTheme.bgLight,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppTheme.blue, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+      ),
+      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
     );
   }
 }

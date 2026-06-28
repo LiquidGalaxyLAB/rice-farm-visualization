@@ -4,3 +4,5 @@ analyzer:
   errors:
     deprecated_member_use: ignore
     unnecessary_string_interpolations: ignore
+    unnecessary_brace_in_string_interps: ignore
+    prefer_final_fields: ignore
