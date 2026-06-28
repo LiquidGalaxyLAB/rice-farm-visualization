@@ -49,6 +49,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 3500000, tilt: 30),
       );
 
+      await Future.delayed(const Duration(seconds: 3));
       await _tts.speak(NarrationScripts.irrigationOverview);
       await widget.lgController.showDashboard(
         'assets/dashboards/dashboard_irrigation.png',
@@ -83,6 +84,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
         ),
       );
 
+      await Future.delayed(const Duration(seconds: 3));
       if (irrData != null) {
         await _tts.speak(
           '${state.name} receives ${state.rainfall.toInt()} millimeters of annual rainfall. '
@@ -173,28 +175,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              _tts.stop();
-              setState(() {});
-            },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _tts.isSpeaking
-                    ? Colors.redAccent.withOpacity(0.15)
-                    : AppTheme.surface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                _tts.isSpeaking ? Icons.volume_off : Icons.volume_up,
-                color: _tts.isSpeaking
-                    ? Colors.redAccent
-                    : AppTheme.textSecondary,
-                size: 18,
-              ),
-            ),
-          ),
+
           const SizedBox(width: 8),
           if (_isLoading)
             const SizedBox(
@@ -255,7 +236,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         children: [
@@ -307,7 +288,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
                 border: Border.all(
                   color: _activeView == 'rainfall'
                       ? const Color(0xFF42A5F5).withOpacity(0.3)
-                      : Colors.white.withOpacity(0.06),
+                      : Colors.grey.shade200,
                 ),
               ),
               child: Row(
@@ -349,7 +330,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -389,96 +370,71 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
 
     return Column(
       children: states.map((state) {
-        final irrData = IrrigationData.stateWise[state.name];
         final isActive = _activeView == state.name;
-        final maxRainfall = 3000.0;
-        final rainfallBar = state.rainfall / maxRainfall;
 
         return GestureDetector(
           onTap: () => _flyToStateIrrigation(state.name),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+          child: Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0xFF0D47A1).withOpacity(0.2)
+                  ? AppTheme.blue.withOpacity(0.1)
                   : AppTheme.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isActive
-                    ? const Color(0xFF42A5F5).withOpacity(0.4)
-                    : Colors.white.withOpacity(0.06),
+                    ? AppTheme.blue.withOpacity(0.3)
+                    : Colors.grey.shade200,
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        state.name,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                Expanded(
+                  child: Text(
+                    state.name,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF42A5F5).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${state.rainfall.toInt()} mm',
-                        style: const TextStyle(
-                          color: Color(0xFF42A5F5),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF66BB6A).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${state.irrigatedPercent}%',
-                        style: const TextStyle(
-                          color: Color(0xFF66BB6A),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                if (irrData != null) ...[
-                  const SizedBox(height: 10),
-                  _buildIrrigationBar(irrData),
-                ],
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: rainfallBar,
-                    backgroundColor: Colors.white.withOpacity(0.05),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFF42A5F5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${state.rainfall.toInt()} mm',
+                    style: const TextStyle(
+                      color: AppTheme.blue,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
-                    minHeight: 3,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${state.irrigatedPercent}%',
+                    style: const TextStyle(
+                      color: AppTheme.green,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -486,56 +442,6 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
           ),
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildIrrigationBar(Map<String, dynamic> data) {
-    final total =
-        (data['canal'] as double) +
-        (data['tubewell'] as double) +
-        (data['tank'] as double) +
-        (data['other'] as double);
-
-    return Row(
-      children: [
-        _buildIrrSegment(
-          'Canal',
-          data['canal'],
-          total,
-          const Color(0xFF42A5F5),
-        ),
-        _buildIrrSegment(
-          'Tubewell',
-          data['tubewell'],
-          total,
-          const Color(0xFF66BB6A),
-        ),
-        _buildIrrSegment('Tank', data['tank'], total, const Color(0xFFFFA726)),
-        _buildIrrSegment('Other', data['other'], total, AppTheme.textSecondary),
-      ],
-    );
-  }
-
-  Widget _buildIrrSegment(
-    String label,
-    double value,
-    double total,
-    Color color,
-  ) {
-    if (value < 1) return const SizedBox();
-    return Expanded(
-      flex: (value / total * 100).toInt().clamp(1, 100),
-      child: Tooltip(
-        message: '$label: ${value.toStringAsFixed(1)}%',
-        child: Container(
-          height: 6,
-          margin: const EdgeInsets.only(right: 2),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -40,7 +40,9 @@ class LGController {
         password: password,
         rigsNum: screenAmount,
       );
+      await detectScreenCount();
       await enableSlaveRefresh();
+      await showBranding();
     }
 
     return success;
@@ -64,6 +66,21 @@ class LGController {
     } catch (e) {
       debugPrint('Reconnect failed: $e');
       return false;
+    }
+  }
+
+  /// Auto-detects the number of screens from the LG rig
+  Future<void> detectScreenCount() async {
+    try {
+      final result = await executeCommand(
+        "grep -oP '(?<=DHCP_LG_FRAMES_MAX=).*' personavars.txt",
+      );
+      final count = int.tryParse(result.trim());
+      if (count != null && count > 0) {
+        screenAmount = count;
+      }
+    } catch (e) {
+      debugPrint('Could not detect screen count: $e');
     }
   }
 
@@ -129,17 +146,28 @@ class LGController {
 
   int get firstScreen => screenAmount <= 1 ? 1 : (screenAmount / 2).floor() + 2;
 
-  int get lastScreen => screenAmount <= 1 ? 1 : (screenAmount / 2).floor();
+  int get lastScreen => screenAmount <= 1 ? 1 : (screenAmount / 2).floor() + 1;
 
   Future<void> sendKMLToSlave(int screen, String content) async {
     if (!isConnected) {
       throw Exception('Not connected to LG');
     }
 
-    await _sshController.uploadString(
-      content,
-      '/var/www/html/kml/slave_$screen.kml',
-    );
+    try {
+      await _sshController.uploadString(
+        content,
+        '/var/www/html/kml/slave_$screen.kml',
+      );
+    } catch (e) {
+      // Fallback to echo if SFTP fails
+      try {
+        await executeCommand(
+          "echo '$content' > /var/www/html/kml/slave_$screen.kml",
+        );
+      } catch (e2) {
+        debugPrint('Failed to send KML to slave $screen: $e2');
+      }
+    }
   }
 
   Future<void> query(String content) async {
@@ -171,7 +199,7 @@ class LGController {
     await Future.delayed(const Duration(milliseconds: 500));
 
     await safeExecute(
-      "echo '\nhttp://${_settingsController.lgHost}:81/$filename' > /var/www/html/kmls.txt",
+      'echo "http://lg1:81/$filename" > /var/www/html/kmls.txt',
     );
   }
 
@@ -223,7 +251,6 @@ class LGController {
     }
   }
 
-  /// Shows branding (logo + title) on the left slave screen
   /// Shows project logo + title on the left slave screen
   Future<void> showBranding() async {
     if (!isConnected) return;
@@ -242,11 +269,10 @@ class LGController {
   }
 
   /// Shows a dashboard image on the right slave screen
-  /// Shows a dashboard image on the right slave screen
   Future<void> showDashboard(String assetPath) async {
     if (!isConnected) return;
 
-    final rightScreen = lastScreen == 1 ? 2 : lastScreen;
+    final rightScreen = lastScreen;
     final dashUrl = 'http://${_settingsController.lgHost}:81/kml/dashboard.png';
 
     // Clear the old dashboard first
@@ -300,165 +326,115 @@ class LGController {
     await showDashboard(dashboardAsset);
   }
 
-  Future<void> sendKml1() async {
-    if (!isConnected) {
-      throw Exception('Not connected to LG');
-    }
-
-    await _sshController.uploadAsset(
-      'assets/kml1.kml',
-      '/var/www/html/kml1.kml',
-    );
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    await executeCommand(
-      "echo '\nhttp://${_settingsController.lgHost}:81/kml1.kml' > /var/www/html/kmls.txt",
-    );
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    await query(
-      'flytoview=<LookAt>'
-      '<longitude>78.0081</longitude>'
-      '<latitude>27.1767</latitude>'
-      '<range>30000</range>'
-      '<tilt>0</tilt>'
-      '<heading>0</heading>'
-      '</LookAt>',
-    );
-  }
-
-  Future<void> sendKml2() async {
-    if (!isConnected) {
-      throw Exception('Not connected to LG');
-    }
-
-    await _sshController.uploadAsset(
-      'assets/kml2.kml',
-      '/var/www/html/kml2.kml',
-    );
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    await executeCommand(
-      "echo '\nhttp://${_settingsController.lgHost}:81/kml2.kml' > /var/www/html/kmls.txt",
-    );
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    await query(
-      'flytoview=<LookAt>'
-      '<longitude>-3.7038</longitude>'
-      '<latitude>40.4168</latitude>'
-      '<range>1200</range>'
-      '<tilt>65</tilt>'
-      '<heading>0</heading>'
-      '</LookAt>',
-    );
-  }
-
   Future<void> clearKmls({bool keepLogos = true}) async {
     if (!isConnected) {
       await reconnect();
     }
 
-    await safeQuery('exittour=true');
+    await safeExecute('echo "exittour=true" > /tmp/query.txt');
     await Future.delayed(const Duration(milliseconds: 300));
 
     await safeExecute('> /var/www/html/kmls.txt');
+    await safeExecute('rm -f /var/www/html/rice_viz.kml');
     await safeExecute('rm -f /var/www/html/kml/dashboard.png');
     await Future.delayed(const Duration(milliseconds: 300));
 
-    final logoScreen = getLogoScreen();
-
+    // Clear all slave screens
     for (int i = 2; i <= screenAmount; i++) {
-      if (keepLogos && i == logoScreen) continue;
-
-      final blankKml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document id="slave_$i">
-  </Document>
-</kml>''';
-
       try {
         await _sshController.uploadString(
-          blankKml,
+          '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document id="slave_$i">\n</Document>\n</kml>',
           '/var/www/html/kml/slave_$i.kml',
         );
       } catch (e) {
-        await reconnect();
-        await _sshController.uploadString(
-          blankKml,
-          '/var/www/html/kml/slave_$i.kml',
-        );
+        debugPrint('Failed to clear slave $i: $e');
       }
-
-      await Future.delayed(const Duration(milliseconds: 200));
+    }
+    // Re-send logo to left screen
+    if (keepLogos) {
+      await showBranding();
     }
   }
 
-  Future<void> sendLogoToLeftScreen({
-    required String assetPath,
-    int? logoScreenNumber,
-  }) async {
-    if (!isConnected) {
-      throw Exception('Not connected to LG');
+  /// Relaunches Google Earth on all screens
+  Future<void> relaunch() async {
+    if (!isConnected) return;
+
+    final pw = _settingsController.lgPassword;
+    final user = _settingsController.lgUsername;
+
+    for (var i = screenAmount; i >= 1; i--) {
+      try {
+        final relaunchCommand =
+            """RELAUNCH_CMD="\\
+if [ -f /etc/init/lxdm.conf ]; then
+  export SERVICE=lxdm
+elif [ -f /etc/init/lightdm.conf ]; then
+  export SERVICE=lightdm
+else
+  exit 1
+fi
+if  [[ \\\$(service \\\$SERVICE status) =~ 'stop' ]]; then
+  echo $pw | sudo -S service \\\${SERVICE} start
+else
+  echo $pw | sudo -S service \\\${SERVICE} restart
+fi
+" && sshpass -p $pw ssh -x -t lg@lg$i "\$RELAUNCH_CMD\"""";
+        await executeCommand(
+          '"/home/$user/bin/lg-relaunch" > /home/$user/log.txt',
+        );
+        await executeCommand(relaunchCommand);
+      } catch (e) {
+        debugPrint('Failed to relaunch lg$i: $e');
+      }
     }
-
-    screenAmount = _settingsController.lgRigsNum;
-    final int targetScreen = logoScreenNumber ?? getLogoScreen();
-    final String logoUrl =
-        'http://${_settingsController.lgHost}:81/kml/logo.png';
-
-    await _sshController.uploadAsset(assetPath, '/var/www/html/kml/logo.png');
-
-    final logoKml =
-        '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
-  <Document>
-    <name>Logos</name>
-    <ScreenOverlay>
-      <name>Logo</name>
-      <Icon>
-        <href>$logoUrl</href>
-      </Icon>
-      <color>ffffffff</color>
-      <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.02" y="0.95" xunits="fraction" yunits="fraction"/>
-      <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
-      <size x="200" y="160" xunits="pixels" yunits="pixels"/>
-    </ScreenOverlay>
-  </Document>
-</kml>''';
-
-    await _sshController.uploadString(
-      logoKml,
-      '/var/www/html/kml/slave_$targetScreen.kml',
-    );
-
-    '/var/www/html/kml/slave_$targetScreen.kml';
-
-    await forceRefresh();
   }
 
-  Future<void> clearLogoFromLeftScreen({int? logoScreenNumber}) async {
-    if (!isConnected) {
-      throw Exception('Not connected to LG');
+  /// Reboots all LG machines
+  Future<void> reboot() async {
+    if (!isConnected) return;
+
+    final pw = _settingsController.lgPassword;
+
+    for (var i = screenAmount; i >= 1; i--) {
+      try {
+        await executeCommand(
+          'sshpass -p $pw ssh -t lg$i "echo $pw | sudo -S reboot"',
+        );
+      } catch (e) {
+        debugPrint('Failed to reboot lg$i: $e');
+      }
     }
+  }
 
-    screenAmount = _settingsController.lgRigsNum;
-    final int targetScreen = logoScreenNumber ?? getLogoScreen();
+  /// Shuts down all LG machines
+  Future<void> shutdown() async {
+    if (!isConnected) return;
 
-    final blankKml =
-        '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document id="slave_$targetScreen">
-  </Document>
-</kml>''';
+    final pw = _settingsController.lgPassword;
 
-    await sendKMLToSlave(targetScreen, blankKml);
-    await forceRefresh();
+    for (var i = screenAmount; i >= 1; i--) {
+      try {
+        await executeCommand(
+          'sshpass -p $pw ssh -t lg$i "echo $pw | sudo -S poweroff"',
+        );
+      } catch (e) {
+        debugPrint('Failed to shutdown lg$i: $e');
+      }
+    }
+  }
+
+  /// Hides logo from left screen
+  Future<void> hideLogo() async {
+    if (!isConnected) return;
+
+    try {
+      await _sshController.uploadString(
+        '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document id="slave_$firstScreen">\n</Document>\n</kml>',
+        '/var/www/html/kml/slave_$firstScreen.kml',
+      );
+    } catch (e) {
+      debugPrint('Failed to hide logo: $e');
+    }
   }
 }

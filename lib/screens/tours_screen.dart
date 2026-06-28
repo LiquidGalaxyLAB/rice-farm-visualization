@@ -51,7 +51,6 @@ class _ToursScreenState extends State<ToursScreen> {
   List<TourStep> _buildRiceBeltTour() {
     return NarrationScripts.riceBeltTour.map((data) {
       String? kmlContent;
-
       if (data['kmlAction'] == 'production') {
         kmlContent = _kmlBuilder.buildProductionKml();
       } else if (data['kmlAction'] == 'state') {
@@ -61,7 +60,6 @@ class _ToursScreenState extends State<ToursScreen> {
         );
         kmlContent = _kmlBuilder.buildStateFlyToKml(state);
       }
-
       return TourStep(
         title: data['title'],
         narration: data['narration'],
@@ -78,7 +76,6 @@ class _ToursScreenState extends State<ToursScreen> {
   List<TourStep> _buildIrrigationTour() {
     return NarrationScripts.irrigationTour.map((data) {
       String? kmlContent;
-
       if (data['kmlAction'] == 'irrigation') {
         kmlContent = _kmlBuilder.buildIrrigationKml();
       } else if (data['kmlAction'] == 'state') {
@@ -88,7 +85,6 @@ class _ToursScreenState extends State<ToursScreen> {
         );
         kmlContent = _kmlBuilder.buildStateBlueKml(state);
       }
-
       return TourStep(
         title: data['title'],
         narration: data['narration'],
@@ -109,12 +105,10 @@ class _ToursScreenState extends State<ToursScreen> {
       'growth': 'ff00cc00',
       'harvest': 'ff00aaff',
     };
-
     return NarrationScripts.seasonalFarmingTour.map((data) {
       final action = data['kmlAction'] as String;
       final color = stageColors[action] ?? 'ff00cc00';
       final kmlContent = _kmlBuilder.buildCropCycleKml(data['title'], color);
-
       return TourStep(
         title: data['title'],
         narration: data['narration'],
@@ -265,7 +259,7 @@ class _ToursScreenState extends State<ToursScreen> {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +303,7 @@ class _ToursScreenState extends State<ToursScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.list, color: AppTheme.textSecondary, size: 14),
+              const Icon(Icons.list, color: AppTheme.textSecondary, size: 14),
               const SizedBox(width: 4),
               Text(
                 '$steps steps',
@@ -319,7 +313,11 @@ class _ToursScreenState extends State<ToursScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              Icon(Icons.volume_up, color: AppTheme.textSecondary, size: 14),
+              const Icon(
+                Icons.volume_up,
+                color: AppTheme.textSecondary,
+                size: 14,
+              ),
               const SizedBox(width: 4),
               const Text(
                 'Narrated',
@@ -374,11 +372,10 @@ class _ToursScreenState extends State<ToursScreen> {
   Widget _buildNowPlaying() {
     final step = _tourEngine.currentStep;
     if (step == null) return const SizedBox();
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF4A148C).withOpacity(0.2),
+        color: const Color(0xFFAB47BC).withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFAB47BC).withOpacity(0.3)),
       ),
@@ -411,7 +408,7 @@ class _ToursScreenState extends State<ToursScreen> {
           const SizedBox(height: 6),
           LinearProgressIndicator(
             value: (_tourEngine.currentIndex + 1) / _tourEngine.totalSteps,
-            backgroundColor: Colors.white.withOpacity(0.05),
+            backgroundColor: Colors.grey.shade200,
             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFAB47BC)),
             minHeight: 3,
           ),
@@ -425,7 +422,7 @@ class _ToursScreenState extends State<ToursScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
         color: AppTheme.surface,
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -448,7 +445,7 @@ class _ToursScreenState extends State<ToursScreen> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFFAB47BC).withOpacity(0.2),
+                color: const Color(0xFFAB47BC).withOpacity(0.15),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: const Color(0xFFAB47BC).withOpacity(0.4),
@@ -494,7 +491,7 @@ class _ToursScreenState extends State<ToursScreen> {
         decoration: BoxDecoration(
           color: AppTheme.bgDark,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Icon(icon, color: color, size: 20),
       ),

@@ -55,33 +55,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
       setState(() => _isLoading = false);
     }
   }
-  // Future<void> _flyToState(StateData state) async {
-  //     setState(() {
-  //       _isLoading = true;
-  //       _activeState = state.name;
-  //     });
-  //     try {
-  //       await widget.lgController.safeExecute(
-  //         '> /var/www/html/kmls.txt',
-  //       );
-  //       await Future.delayed(const Duration(milliseconds: 300));
 
-  //       final kml = _kmlBuilder.buildStateFlyToKml(state);
-  //       await widget.lgController.sendKmlToMaster(kml);
-  //       await widget.lgController.safeQuery(
-  //         _kmlBuilder.buildLookAt(
-  //           lat: state.latitude,
-  //           lng: state.longitude,
-  //           range: 800000,
-  //           tilt: 45,
-  //         ),
-  //       );
-  //     } catch (e) {
-  //       _showError('Failed to fly to ${state.name}: $e');
-  //     } finally {
-  //       setState(() => _isLoading = false);
-  //     }
-  //   }
   Future<void> _flyToState(StateData state) async {
     setState(() {
       _isLoading = true;
@@ -102,12 +76,14 @@ class _RegionsScreenState extends State<RegionsScreen> {
         ),
       );
 
+      await Future.delayed(const Duration(seconds: 3));
       // Play narration for this state
       final narration = _getNarration(state.name);
       if (narration != null) {
         await _tts.speak(narration);
       }
 
+      // Update right screen dashboard
       // Update right screen dashboard
       final safeName = state.name.toLowerCase().replaceAll(' ', '_');
       await widget.lgController.showDashboard(
@@ -224,28 +200,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              _tts.stop();
-              setState(() {});
-            },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _tts.isSpeaking
-                    ? Colors.redAccent.withOpacity(0.15)
-                    : AppTheme.surface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                _tts.isSpeaking ? Icons.volume_off : Icons.volume_up,
-                color: _tts.isSpeaking
-                    ? Colors.redAccent
-                    : AppTheme.textSecondary,
-                size: 18,
-              ),
-            ),
-          ),
+
           const SizedBox(width: 8),
           if (_isLoading)
             const SizedBox(
@@ -327,9 +282,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
           color: filled ? color.withOpacity(0.15) : AppTheme.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: filled
-                ? color.withOpacity(0.3)
-                : Colors.white.withOpacity(0.06),
+            color: filled ? color.withOpacity(0.3) : Colors.grey.shade200,
           ),
         ),
         child: Row(
@@ -384,7 +337,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
           border: Border.all(
             color: isActive
                 ? const Color(0xFF66BB6A).withOpacity(0.4)
-                : Colors.white.withOpacity(0.06),
+                : Colors.grey.shade200,
           ),
         ),
         child: Column(
