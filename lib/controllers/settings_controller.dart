@@ -7,11 +7,11 @@ class SettingsController {
   static const String _passwordKey = 'ssh_password';
   static const String _rigsNumKey = 'rigs_num';
 
-  static const String defaultHost = '192.168.1.7';
+  static const String defaultHost = '';
   static const int defaultPort = 22;
-  static const String defaultUsername = 'lg';
-  static const String defaultPassword = '123';
-  static const int defaultRigsNum = 3;
+  static const String defaultUsername = '';
+  static const String defaultPassword = '';
+  static const int defaultRigsNum = 5;
 
   String _lgHost = defaultHost;
   int _lgPort = defaultPort;

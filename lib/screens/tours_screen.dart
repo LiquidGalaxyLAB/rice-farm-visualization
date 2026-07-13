@@ -10,9 +10,7 @@ import '../theme/app_theme.dart';
 
 class ToursScreen extends StatefulWidget {
   final LGController lgController;
-
   const ToursScreen({super.key, required this.lgController});
-
   @override
   State<ToursScreen> createState() => _ToursScreenState();
 }
@@ -46,6 +44,12 @@ class _ToursScreenState extends State<ToursScreen> {
     _tourEngine.stop();
     _tts.dispose();
     super.dispose();
+  }
+
+  void _goBack() {
+    _tourEngine.stop();
+    widget.lgController.clearKmls();
+    Navigator.pop(context);
   }
 
   List<TourStep> _buildRiceBeltTour() {
@@ -213,20 +217,17 @@ class _ToursScreenState extends State<ToursScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              _tourEngine.stop();
-              Navigator.pop(context);
-            },
+            onTap: _goBack,
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.arrow_back,
                 color: AppTheme.textSecondary,
-                size: 20,
+                size: 22,
               ),
             ),
           ),
@@ -236,8 +237,8 @@ class _ToursScreenState extends State<ToursScreen> {
               'Guided Tours',
               style: TextStyle(
                 color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -255,10 +256,10 @@ class _ToursScreenState extends State<ToursScreen> {
     required VoidCallback onPlay,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
@@ -267,14 +268,14 @@ class _ToursScreenState extends State<ToursScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: 24),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,16 +284,16 @@ class _ToursScreenState extends State<ToursScreen> {
                       title,
                       style: const TextStyle(
                         color: AppTheme.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       description,
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -300,42 +301,42 @@ class _ToursScreenState extends State<ToursScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
-              const Icon(Icons.list, color: AppTheme.textSecondary, size: 14),
+              const Icon(Icons.list, color: AppTheme.textSecondary, size: 16),
               const SizedBox(width: 4),
               Text(
                 '$steps steps',
                 style: const TextStyle(
                   color: AppTheme.textSecondary,
-                  fontSize: 11,
+                  fontSize: 13,
                 ),
               ),
               const SizedBox(width: 16),
               const Icon(
                 Icons.volume_up,
                 color: AppTheme.textSecondary,
-                size: 14,
+                size: 16,
               ),
               const SizedBox(width: 4),
               const Text(
                 'Narrated',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
               const Spacer(),
               GestureDetector(
                 onTap: _tourActive ? null : onPlay,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: 20,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: _tourActive
                         ? Colors.grey.withOpacity(0.1)
                         : color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: _tourActive
                           ? Colors.grey.withOpacity(0.2)
@@ -347,15 +348,15 @@ class _ToursScreenState extends State<ToursScreen> {
                       Icon(
                         Icons.play_arrow,
                         color: _tourActive ? Colors.grey : color,
-                        size: 16,
+                        size: 20,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
                         'Start',
                         style: TextStyle(
                           color: _tourActive ? Colors.grey : color,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -373,10 +374,10 @@ class _ToursScreenState extends State<ToursScreen> {
     final step = _tourEngine.currentStep;
     if (step == null) return const SizedBox();
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: const Color(0xFFAB47BC).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFAB47BC).withOpacity(0.3)),
       ),
       child: Column(
@@ -384,33 +385,33 @@ class _ToursScreenState extends State<ToursScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.music_note, color: Color(0xFFAB47BC), size: 16),
+              const Icon(Icons.music_note, color: Color(0xFFAB47BC), size: 18),
               const SizedBox(width: 8),
               Text(
                 'Step ${_tourEngine.currentIndex + 1} of ${_tourEngine.totalSteps}',
                 style: const TextStyle(
                   color: Color(0xFFAB47BC),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             step.title,
             style: const TextStyle(
               color: AppTheme.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           LinearProgressIndicator(
             value: (_tourEngine.currentIndex + 1) / _tourEngine.totalSteps,
             backgroundColor: Colors.grey.shade200,
             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFAB47BC)),
-            minHeight: 3,
+            minHeight: 4,
           ),
         ],
       ),
@@ -419,7 +420,7 @@ class _ToursScreenState extends State<ToursScreen> {
 
   Widget _buildPlaybackControls() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
@@ -442,8 +443,8 @@ class _ToursScreenState extends State<ToursScreen> {
               setState(() {});
             },
             child: Container(
-              width: 52,
-              height: 52,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: const Color(0xFFAB47BC).withOpacity(0.15),
                 shape: BoxShape.circle,
@@ -454,7 +455,7 @@ class _ToursScreenState extends State<ToursScreen> {
               child: Icon(
                 _tourEngine.isPaused ? Icons.play_arrow : Icons.pause,
                 color: const Color(0xFFAB47BC),
-                size: 28,
+                size: 30,
               ),
             ),
           ),
@@ -486,14 +487,14 @@ class _ToursScreenState extends State<ToursScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: AppTheme.bgDark,
           shape: BoxShape.circle,
           border: Border.all(color: Colors.grey.shade200),
         ),
-        child: Icon(icon, color: color, size: 20),
+        child: Icon(icon, color: color, size: 22),
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../controllers/ssh_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../helpers/debug_helper.dart';
 import '../theme/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final SSHController sshController;
@@ -35,24 +36,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final s = widget.settingsController;
-    _hostController = TextEditingController(
-      text: s.lgHost.isNotEmpty && s.lgHost != '192.168.1.7' ? s.lgHost : '',
-    );
-    _portController = TextEditingController(
-      text: s.lgPort != 22 ? s.lgPort.toString() : '',
-    );
-    _usernameController = TextEditingController(
-      text: s.lgUsername.isNotEmpty && s.lgUsername != 'lg' ? s.lgUsername : '',
-    );
-    _passwordController = TextEditingController(
-      text: s.lgPassword.isNotEmpty && s.lgPassword != '123'
-          ? s.lgPassword
-          : '',
-    );
-    _rigsNumController = TextEditingController(
-      text: s.lgRigsNum != 3 ? s.lgRigsNum.toString() : '',
-    );
+    _hostController = TextEditingController();
+    _portController = TextEditingController();
+    _usernameController = TextEditingController();
+    _passwordController = TextEditingController();
+    _rigsNumController = TextEditingController();
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Only fill fields if user has previously saved settings
+    if (prefs.containsKey('ssh_host')) {
+      setState(() {
+        _hostController.text = prefs.getString('ssh_host') ?? '';
+        _portController.text = (prefs.getInt('ssh_port') ?? 22).toString();
+        _usernameController.text = prefs.getString('ssh_username') ?? '';
+        _passwordController.text = prefs.getString('ssh_password') ?? '';
+        _rigsNumController.text = (prefs.getInt('rigs_num') ?? 3).toString();
+      });
+    }
   }
 
   @override
@@ -261,6 +265,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
+              if (widget.sshController.isConnected) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      widget.sshController.disconnect();
+                      setState(() {});
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Disconnected from LG'),
+                          backgroundColor: Colors.redAccent,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.link_off, size: 22),
+                    label: const Text(
+                      'Disconnect',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
