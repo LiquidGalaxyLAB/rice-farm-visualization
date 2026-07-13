@@ -9,9 +9,7 @@ import '../theme/app_theme.dart';
 
 class CropCycleScreen extends StatefulWidget {
   final LGController lgController;
-
   const CropCycleScreen({super.key, required this.lgController});
-
   @override
   State<CropCycleScreen> createState() => _CropCycleScreenState();
 }
@@ -40,25 +38,28 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
     super.dispose();
   }
 
+  void _goBack() {
+    _isAutoPlaying = false;
+    _tts.stop();
+    widget.lgController.clearKmls();
+    Navigator.pop(context);
+  }
+
   Future<void> _showStage(int index) async {
     if (_isLoading) return;
     setState(() {
       _isLoading = true;
       _activeStageIndex = index;
     });
-
     try {
       final stage = _currentCycle.stages[index];
-
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
       await Future.delayed(const Duration(milliseconds: 300));
-
       final kml = _kmlBuilder.buildCropCycleKml(stage.name, stage.color);
       await widget.lgController.sendKmlToMaster(kml);
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 4000000, tilt: 20),
       );
-      // Update right screen dashboard
       await widget.lgController.showDashboard(
         _isKharif
             ? 'assets/dashboards/dashboard_crop_kharif.png'
@@ -76,33 +77,21 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
       setState(() => _isAutoPlaying = false);
       return;
     }
-
     setState(() => _isAutoPlaying = true);
-
-    // Narrate intro
     await _tts.speak(NarrationScripts.cropCycleOverview);
     await Future.delayed(const Duration(seconds: 3));
-
     for (int i = 0; i < _currentCycle.stages.length; i++) {
       if (!_isAutoPlaying) break;
-
       await _showStage(i);
-
       final stage = _currentCycle.stages[i];
       await _tts.speak('${stage.name}. ${stage.months}. ${stage.description}');
-
-      // Wait for narration to finish
       int waited = 0;
       while (_tts.isSpeaking && waited < 200 && _isAutoPlaying) {
         await Future.delayed(const Duration(milliseconds: 100));
         waited++;
       }
-
-      if (_isAutoPlaying) {
-        await Future.delayed(const Duration(seconds: 2));
-      }
+      if (_isAutoPlaying) await Future.delayed(const Duration(seconds: 2));
     }
-
     setState(() => _isAutoPlaying = false);
   }
 
@@ -149,21 +138,17 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              _isAutoPlaying = false;
-              _tts.stop();
-              Navigator.pop(context);
-            },
+            onTap: _goBack,
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.arrow_back,
                 color: AppTheme.textSecondary,
-                size: 20,
+                size: 22,
               ),
             ),
           ),
@@ -173,17 +158,17 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
               'Seasonal Crop Cycle',
               style: TextStyle(
                 color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
           if (_isLoading)
             const SizedBox(
-              width: 20,
-              height: 20,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
+                strokeWidth: 2.5,
                 color: Color(0xFFFFA726),
               ),
             ),
@@ -197,25 +182,23 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isKharif = true;
-                  _activeStageIndex = -1;
-                });
-              },
+              onTap: () => setState(() {
+                _isKharif = true;
+                _activeStageIndex = -1;
+              }),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: _isKharif
                       ? const Color(0xFF66BB6A).withOpacity(0.2)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   border: _isKharif
                       ? Border.all(
                           color: const Color(0xFF66BB6A).withOpacity(0.3),
@@ -230,7 +213,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                         color: _isKharif
                             ? const Color(0xFF66BB6A)
                             : AppTheme.textSecondary,
-                        fontSize: 13,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -240,7 +223,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                         color: _isKharif
                             ? const Color(0xFF66BB6A).withOpacity(0.7)
                             : AppTheme.textSecondary.withOpacity(0.5),
-                        fontSize: 10,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -250,19 +233,17 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isKharif = false;
-                  _activeStageIndex = -1;
-                });
-              },
+              onTap: () => setState(() {
+                _isKharif = false;
+                _activeStageIndex = -1;
+              }),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: !_isKharif
                       ? const Color(0xFFFFA726).withOpacity(0.2)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   border: !_isKharif
                       ? Border.all(
                           color: const Color(0xFFFFA726).withOpacity(0.3),
@@ -277,7 +258,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                         color: !_isKharif
                             ? const Color(0xFFFFA726)
                             : AppTheme.textSecondary,
-                        fontSize: 13,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -287,7 +268,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                         color: !_isKharif
                             ? const Color(0xFFFFA726).withOpacity(0.7)
                             : AppTheme.textSecondary.withOpacity(0.5),
-                        fontSize: 10,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -303,7 +284,6 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
   Widget _buildTimeline() {
     final stages = _currentCycle.stages;
     final stageIcons = [Icons.spa, Icons.grass, Icons.park, Icons.agriculture];
-
     return Row(
       children: List.generate(stages.length, (index) {
         final stage = stages[index];
@@ -311,18 +291,17 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
         final accentColor = _isKharif
             ? const Color(0xFF66BB6A)
             : const Color(0xFFFFA726);
-
         return Expanded(
           child: GestureDetector(
             onTap: () => _showStage(index),
             child: Container(
               margin: EdgeInsets.only(right: index < stages.length - 1 ? 6 : 0),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
                 color: isActive
                     ? accentColor.withOpacity(0.15)
                     : AppTheme.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isActive
                       ? accentColor.withOpacity(0.4)
@@ -334,14 +313,14 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                   Icon(
                     stageIcons[index],
                     color: isActive ? accentColor : AppTheme.textSecondary,
-                    size: 22,
+                    size: 24,
                   ),
                   const SizedBox(height: 6),
                   Text(
                     stage.name,
                     style: TextStyle(
                       color: isActive ? accentColor : AppTheme.textPrimary,
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -350,7 +329,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                     stage.months,
                     style: TextStyle(
                       color: AppTheme.textSecondary.withOpacity(0.6),
-                      fontSize: 9,
+                      fontSize: 10,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -369,28 +348,26 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade200),
         ),
         child: const Center(
           child: Text(
             'Tap a stage above to see it on Liquid Galaxy',
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
         ),
       );
     }
-
     final stage = _currentCycle.stages[_activeStageIndex];
     final accentColor = _isKharif
         ? const Color(0xFF66BB6A)
         : const Color(0xFFFFA726);
-
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: accentColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accentColor.withOpacity(0.2)),
       ),
       child: Column(
@@ -399,8 +376,8 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
           Row(
             children: [
               Container(
-                width: 12,
-                height: 12,
+                width: 14,
+                height: 14,
                 decoration: BoxDecoration(
                   color: accentColor,
                   shape: BoxShape.circle,
@@ -411,7 +388,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                 '${stage.name} — ${stage.months}',
                 style: TextStyle(
                   color: accentColor,
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -422,7 +399,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
             stage.description,
             style: const TextStyle(
               color: AppTheme.textPrimary,
-              fontSize: 13,
+              fontSize: 14,
               height: 1.5,
             ),
           ),
@@ -435,19 +412,18 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
     final accentColor = _isKharif
         ? const Color(0xFF66BB6A)
         : const Color(0xFFFFA726);
-
     return Row(
       children: [
         Expanded(
           child: GestureDetector(
             onTap: _isLoading ? null : _autoPlay,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 color: _isAutoPlaying
                     ? Colors.redAccent.withOpacity(0.15)
                     : accentColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: _isAutoPlaying
                       ? Colors.redAccent.withOpacity(0.3)
@@ -460,15 +436,15 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
                   Icon(
                     _isAutoPlaying ? Icons.stop : Icons.play_arrow,
                     color: _isAutoPlaying ? Colors.redAccent : accentColor,
-                    size: 18,
+                    size: 22,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Text(
                     _isAutoPlaying ? 'Stop' : 'Auto-play',
                     style: TextStyle(
                       color: _isAutoPlaying ? Colors.redAccent : accentColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -486,23 +462,23 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
               setState(() => _activeStageIndex = -1);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.clear_all, color: Colors.redAccent, size: 18),
-                  SizedBox(width: 6),
+                  Icon(Icons.clear_all, color: Colors.redAccent, size: 22),
+                  SizedBox(width: 8),
                   Text(
                     'Clear',
                     style: TextStyle(
                       color: Colors.redAccent,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

@@ -12,7 +12,6 @@ import 'regions_screen.dart';
 import 'crop_cycle_screen.dart';
 import 'irrigation_screen.dart';
 import 'tours_screen.dart';
-import 'maps_screen.dart';
 import 'about_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -140,14 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-        IconButton(
-          onPressed: () => _navigateTo(const AboutScreen()),
-          icon: const Icon(
-            Icons.info_outline,
-            color: AppTheme.textSecondary,
-            size: 26,
-          ),
-        ),
+
         IconButton(
           onPressed: _navigateToSettings,
           icon: const Icon(
@@ -259,12 +251,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _navigateTo(ToursScreen(lgController: widget.lgController)),
       ),
       _MenuItem(
-        icon: Icons.sync,
-        title: 'Synced Navigation',
-        subtitle: 'Control LG with Google Maps',
+        icon: Icons.info_outline,
+        title: 'About Project',
+        subtitle: 'Project info, team, and data sources',
         color: AppTheme.teal,
         bgColor: AppTheme.teal,
-        onTap: () => _navigateTo(MapsScreen(lgController: widget.lgController)),
+        onTap: () => _navigateTo(const AboutScreen()),
       ),
     ];
 

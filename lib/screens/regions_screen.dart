@@ -9,9 +9,7 @@ import '../data/narration_scripts.dart';
 
 class RegionsScreen extends StatefulWidget {
   final LGController lgController;
-
   const RegionsScreen({super.key, required this.lgController});
-
   @override
   State<RegionsScreen> createState() => _RegionsScreenState();
 }
@@ -34,12 +32,17 @@ class _RegionsScreenState extends State<RegionsScreen> {
     super.dispose();
   }
 
+  void _goBack() {
+    _tts.stop();
+    widget.lgController.clearKmls();
+    Navigator.pop(context);
+  }
+
   Future<void> _showAllStates() async {
     setState(() => _isLoading = true);
     try {
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
       await Future.delayed(const Duration(milliseconds: 300));
-
       final kml = _kmlBuilder.buildProductionKml();
       await widget.lgController.sendKmlToMaster(kml);
       await widget.lgController.safeQuery(
@@ -64,7 +67,6 @@ class _RegionsScreenState extends State<RegionsScreen> {
     try {
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
       await Future.delayed(const Duration(milliseconds: 300));
-
       final kml = _kmlBuilder.buildStateFlyToKml(state);
       await widget.lgController.sendKmlToMaster(kml);
       await widget.lgController.safeQuery(
@@ -75,16 +77,9 @@ class _RegionsScreenState extends State<RegionsScreen> {
           tilt: 45,
         ),
       );
-
       await Future.delayed(const Duration(seconds: 3));
-      // Play narration for this state
       final narration = _getNarration(state.name);
-      if (narration != null) {
-        await _tts.speak(narration);
-      }
-
-      // Update right screen dashboard
-      // Update right screen dashboard
+      if (narration != null) await _tts.speak(narration);
       final safeName = state.name.toLowerCase().replaceAll(' ', '_');
       await widget.lgController.showDashboard(
         'assets/dashboards/dashboard_$safeName.png',
@@ -123,27 +118,6 @@ class _RegionsScreenState extends State<RegionsScreen> {
     }
   }
 
-  Future<void> _orbitState(StateData state) async {
-    setState(() => _isLoading = true);
-    try {
-      final sequence = _kmlBuilder.buildOrbitSequence(
-        lat: state.latitude,
-        lng: state.longitude,
-        range: 500000,
-        tilt: 60,
-        steps: 36,
-      );
-      for (final lookAt in sequence) {
-        await widget.lgController.query(lookAt);
-        await Future.delayed(const Duration(milliseconds: 150));
-      }
-    } catch (e) {
-      _showError('Orbit failed: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -172,20 +146,17 @@ class _RegionsScreenState extends State<RegionsScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              _tts.stop();
-              Navigator.pop(context);
-            },
+            onTap: _goBack,
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.arrow_back,
                 color: AppTheme.textSecondary,
-                size: 20,
+                size: 22,
               ),
             ),
           ),
@@ -195,19 +166,18 @@ class _RegionsScreenState extends State<RegionsScreen> {
               'Major Rice Regions',
               style: TextStyle(
                 color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-
           const SizedBox(width: 8),
           if (_isLoading)
             const SizedBox(
-              width: 20,
-              height: 20,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
+                strokeWidth: 2.5,
                 color: Color(0xFF66BB6A),
               ),
             ),
@@ -218,7 +188,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
 
   Widget _buildActionButtons() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           Expanded(
@@ -228,25 +198,6 @@ class _RegionsScreenState extends State<RegionsScreen> {
               color: const Color(0xFF66BB6A),
               filled: true,
               onTap: _showAllStates,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildChipButton(
-              label: 'Fly to India',
-              icon: Icons.flight,
-              color: const Color(0xFF42A5F5),
-              filled: false,
-              onTap: () async {
-                await widget.lgController.query(
-                  _kmlBuilder.buildLookAt(
-                    lat: 22.0,
-                    lng: 82.0,
-                    range: 5000000,
-                    tilt: 0,
-                  ),
-                );
-              },
             ),
           ),
           const SizedBox(width: 8),
@@ -277,10 +228,10 @@ class _RegionsScreenState extends State<RegionsScreen> {
     return GestureDetector(
       onTap: _isLoading ? null : onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: filled ? color.withOpacity(0.15) : AppTheme.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: filled ? color.withOpacity(0.3) : Colors.grey.shade200,
           ),
@@ -288,14 +239,14 @@ class _RegionsScreenState extends State<RegionsScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 14),
-            const SizedBox(width: 4),
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -322,18 +273,17 @@ class _RegionsScreenState extends State<RegionsScreen> {
         .map((s) => s.production)
         .reduce((a, b) => a > b ? a : b);
     final barWidth = state.production / maxProd;
-
     return GestureDetector(
       onTap: () => _flyToState(state),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isActive
-              ? const Color(0xFF1B5E20).withOpacity(0.2)
+              ? const Color(0xFF1B5E20).withOpacity(0.15)
               : AppTheme.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isActive
                 ? const Color(0xFF66BB6A).withOpacity(0.4)
@@ -345,13 +295,13 @@ class _RegionsScreenState extends State<RegionsScreen> {
             Row(
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFF66BB6A).withOpacity(0.2)
                         : AppTheme.bgDark,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
                     child: Text(
@@ -360,8 +310,8 @@ class _RegionsScreenState extends State<RegionsScreen> {
                         color: isActive
                             ? const Color(0xFF66BB6A)
                             : AppTheme.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -375,41 +325,26 @@ class _RegionsScreenState extends State<RegionsScreen> {
                         state.name,
                         style: const TextStyle(
                           color: AppTheme.textPrimary,
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         '${state.production}M tonnes  •  ${state.area}M ha  •  ${state.yield.toInt()} kg/ha',
                         style: const TextStyle(
                           color: AppTheme.textSecondary,
-                          fontSize: 11,
+                          fontSize: 13,
                         ),
                       ),
                     ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => _orbitState(state),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF42A5F5).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.rotate_right,
-                      color: Color(0xFF42A5F5),
-                      size: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
+
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+                    horizontal: 14,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF66BB6A).withOpacity(0.1),
@@ -420,14 +355,14 @@ class _RegionsScreenState extends State<RegionsScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.send, color: Color(0xFF66BB6A), size: 11),
-                      SizedBox(width: 4),
+                      Icon(Icons.send, color: Color(0xFF66BB6A), size: 14),
+                      SizedBox(width: 6),
                       Text(
                         'Fly to',
                         style: TextStyle(
                           color: Color(0xFF66BB6A),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -435,18 +370,18 @@ class _RegionsScreenState extends State<RegionsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: barWidth,
-                backgroundColor: Colors.white.withOpacity(0.05),
+                backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   isActive
                       ? const Color(0xFF66BB6A)
                       : const Color(0xFF66BB6A).withOpacity(0.4),
                 ),
-                minHeight: 4,
+                minHeight: 5,
               ),
             ),
           ],

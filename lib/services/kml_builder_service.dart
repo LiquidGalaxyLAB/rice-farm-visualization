@@ -343,7 +343,7 @@ class KmlBuilderService {
       <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
       <screenXY x="0.02" y="0.95" xunits="fraction" yunits="fraction"/>
       <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
-      <size x="300" y="240" xunits="pixels" yunits="pixels"/>
+      <size x="520" y="300" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
   </Document>
 </kml>''';

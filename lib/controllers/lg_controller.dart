@@ -188,13 +188,22 @@ class LGController {
 
   Future<void> sendKmlToMaster(
     String kmlContent, {
-    String filename = 'rice_viz.kml',
+    String prefix = 'rice_viz',
   }) async {
     if (!isConnected) {
       await reconnect();
     }
 
+    // Unique name every send -> new md5 in sync_nlc.php ->
+    // all screens get a Create and download the fresh KML
+    final filename = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.kml';
+
+    // Empty the list and remove old files
+    await safeExecute('> /var/www/html/kmls.txt');
+    await safeExecute('rm -f /var/www/html/${prefix}_*.kml');
+
     await _sshController.uploadString(kmlContent, '/var/www/html/$filename');
+    await safeExecute('chmod 644 /var/www/html/$filename');
 
     await Future.delayed(const Duration(milliseconds: 500));
 
@@ -262,6 +271,7 @@ class LGController {
       'assets/logo.png',
       '/var/www/html/kml/logo.png',
     );
+    await executeCommand('chmod 644 /var/www/html/kml/logo.png');
 
     final kmlBuilder = KmlBuilderService();
     final brandingKml = kmlBuilder.buildBrandingOverlay(logoUrl);
@@ -290,7 +300,7 @@ class LGController {
       assetPath,
       '/var/www/html/kml/dashboard.png',
     );
-
+    await executeCommand('chmod 644 /var/www/html/kml/dashboard.png');
     await Future.delayed(const Duration(milliseconds: 300));
 
     // Create ScreenOverlay KML
@@ -308,7 +318,7 @@ class LGController {
       <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
       <screenXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
       <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
-      <size x="0.5" y="0.85" xunits="fraction" yunits="fraction"/>
+      <size x="0.75" y="0.9" xunits="fraction" yunits="fraction"/>
     </ScreenOverlay>
   </Document>
 </kml>''';
