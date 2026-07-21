@@ -10,7 +10,9 @@ import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
-  debugPrint('=== RICE FARM BUILD v4: lg1 + chmod + unique-filename ===');
+  debugPrint(
+    '=== RICE FARM BUILD v5: kml-folder + master-IP + diagnostics ===',
+  );
   WidgetsFlutterBinding.ensureInitialized();
 
   final settingsController = SettingsController();

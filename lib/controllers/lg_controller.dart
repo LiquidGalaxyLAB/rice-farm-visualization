@@ -15,6 +15,7 @@ class LGController {
   final SettingsController _settingsController;
 
   int screenAmount;
+  String lastKmlFilename = '';
 
   bool get isConnected => _sshController.isConnected;
   String? get lastError => _sshController.lastError;
@@ -197,19 +198,112 @@ class LGController {
     // Unique name every send -> new md5 in sync_nlc.php ->
     // all screens get a Create and download the fresh KML
     final filename = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.kml';
+    lastKmlFilename = filename;
 
     // Empty the list and remove old files
     await safeExecute('> /var/www/html/kmls.txt');
+    await safeExecute('rm -f /var/www/html/kml/${prefix}_*.kml');
     await safeExecute('rm -f /var/www/html/${prefix}_*.kml');
 
-    await _sshController.uploadString(kmlContent, '/var/www/html/$filename');
-    await safeExecute('chmod 644 /var/www/html/$filename');
+    await _sshController.uploadString(
+      kmlContent,
+      '/var/www/html/kml/$filename',
+    );
+    await safeExecute('chmod 644 /var/www/html/kml/$filename');
 
     await Future.delayed(const Duration(milliseconds: 500));
 
     await safeExecute(
-      'echo "http://lg1:81/$filename" > /var/www/html/kmls.txt',
+      'echo "http://${_settingsController.lgHost}:81/kml/$filename" > /var/www/html/kmls.txt',
     );
+  }
+
+  /// Uploads an orbit tour KML and starts playing it.
+  /// Appends to kmls.txt so the current colored KML stays visible.
+  Future<void> startOrbit(String orbitKml) async {
+    if (!isConnected) {
+      await reconnect();
+    }
+    final filename = 'orbit_${DateTime.now().millisecondsSinceEpoch}.kml';
+    await safeExecute('rm -f /var/www/html/kml/orbit_*.kml');
+    await safeExecute('rm -f /var/www/html/orbit_*.kml');
+    await _sshController.uploadString(orbitKml, '/var/www/html/kml/$filename');
+    await safeExecute('chmod 644 /var/www/html/kml/$filename');
+    await Future.delayed(const Duration(milliseconds: 500));
+    await safeExecute(
+      'echo "http://${_settingsController.lgHost}:81/kml/$filename" >> /var/www/html/kmls.txt',
+    );
+    // Give screens time to load the tour, then play it
+    await Future.delayed(const Duration(milliseconds: 2500));
+    await safeExecute('echo "playtour=Orbit" > /tmp/query.txt');
+  }
+
+  /// Stops a running orbit tour
+  Future<void> stopOrbit() async {
+    await safeExecute('echo "exittour=true" > /tmp/query.txt');
+  }
+
+  /// Collapses whitespace/newlines and caps length so error banners stay readable.
+  String _trimOutput(String input, int maxLen) {
+    final collapsed = input.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return collapsed.length > maxLen
+        ? '${collapsed.substring(0, maxLen)}…'
+        : collapsed;
+  }
+
+  /// Read-only diagnostic for the kmls.txt delivery pipeline.
+  /// Returns '' if all checks pass, otherwise a descriptive error string.
+  Future<String> verifyKmlDelivery() async {
+    final url = 'http://${_settingsController.lgHost}:81/kml/$lastKmlFilename';
+    try {
+      final kmlsTxt = await safeExecute('cat /var/www/html/kmls.txt');
+      if (!kmlsTxt.contains(lastKmlFilename)) {
+        return 'KML ERROR [1/3] kmls.txt does not contain the sent file.\n'
+            'Expected: $lastKmlFilename\n'
+            'Actual content: "${_trimOutput(kmlsTxt, 120)}"';
+      }
+
+      final masterCode = await safeExecute(
+        'curl -s -o /dev/null -w "%{http_code}" $url',
+      );
+      final code = masterCode.trim();
+      if (code != '200') {
+        final String meaning;
+        switch (code) {
+          case '403':
+            meaning = 'permission denied - Apache cannot read the file';
+            break;
+          case '404':
+            meaning = 'file not found at this path';
+            break;
+          case '000':
+            meaning = 'connection failed - Apache/port 81 not reachable';
+            break;
+          default:
+            meaning = 'unexpected response';
+        }
+        return 'KML ERROR [2/3] master cannot serve the KML.\n'
+            'URL: $url\n'
+            'HTTP: $code ($meaning)';
+      }
+
+      final password = _settingsController.lgPassword;
+      final slaveOutput = await executeCommand(
+        'sshpass -p $password ssh -o StrictHostKeyChecking=no -o ConnectTimeout=4 lg2 '
+        '"curl -s -o /dev/null -w \'%{http_code}\' $url"',
+      );
+      if (!slaveOutput.contains('200')) {
+        return 'KML ERROR [3/3] slave lg2 cannot download the KML.\n'
+            'URL: $url\n'
+            'slave response: "${_trimOutput(slaveOutput, 120)}"\n'
+            '(master IP unreachable from slave, or curl/ssh issue on rig)';
+      }
+
+      debugPrint('KML VERIFY OK: $url served to master and slave');
+      return '';
+    } catch (e) {
+      return 'KML ERROR verify crashed: ${_trimOutput(e.toString(), 200)}';
+    }
   }
 
   Future<void> enableSlaveRefresh() async {
@@ -318,7 +412,7 @@ class LGController {
       <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
       <screenXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
       <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
-      <size x="0.75" y="0.9" xunits="fraction" yunits="fraction"/>
+      <size x="0.53" y="0.89" xunits="fraction" yunits="fraction"/>
     </ScreenOverlay>
   </Document>
 </kml>''';
@@ -346,11 +440,14 @@ class LGController {
 
     await safeExecute('> /var/www/html/kmls.txt');
     await safeExecute('rm -f /var/www/html/rice_viz.kml');
+    await safeExecute('rm -f /var/www/html/kml/rice_viz_*.kml');
+    await safeExecute('rm -f /var/www/html/kml/orbit_*.kml');
     await safeExecute('rm -f /var/www/html/kml/dashboard.png');
     await Future.delayed(const Duration(milliseconds: 300));
 
     // Clear all slave screens
     for (int i = 2; i <= screenAmount; i++) {
+      if (keepLogos && i == firstScreen) continue;
       try {
         await _sshController.uploadString(
           '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document id="slave_$i">\n</Document>\n</kml>',
@@ -359,10 +456,6 @@ class LGController {
       } catch (e) {
         debugPrint('Failed to clear slave $i: $e');
       }
-    }
-    // Re-send logo to left screen
-    if (keepLogos) {
-      await showBranding();
     }
   }
 

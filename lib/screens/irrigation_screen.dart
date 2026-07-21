@@ -19,6 +19,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
   final TtsService _tts = TtsService();
   bool _isLoading = false;
   String? _activeView;
+  String _kmlError = '';
 
   @override
   void initState() {
@@ -46,24 +47,35 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
     setState(() {
       _isLoading = true;
       _activeView = 'rainfall';
+      _kmlError = '';
     });
     try {
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       final kml = _kmlBuilder.buildIrrigationKml();
       await widget.lgController.sendKmlToMaster(kml);
+      if (!mounted) return;
+      widget.lgController.verifyKmlDelivery().then((s) {
+        if (mounted) setState(() => _kmlError = s);
+      });
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 3500000, tilt: 30),
       );
+      if (!mounted) return;
       await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
       await _tts.speak(NarrationScripts.irrigationOverview);
+      if (!mounted) return;
       await widget.lgController.showDashboard(
         'assets/dashboards/dashboard_irrigation.png',
       );
+      if (!mounted) return;
     } catch (e) {
       _showError('Failed: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -71,6 +83,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
     setState(() {
       _isLoading = true;
       _activeView = stateName;
+      _kmlError = '';
     });
     try {
       final state = RiceStates.states.firstWhere((s) => s.name == stateName);
@@ -78,11 +91,18 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
 
       // Clear old KML first
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      if (!mounted) return;
       await widget.lgController.safeExecute('rm -f /var/www/html/rice_viz.kml');
+      if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
 
       final kml = _kmlBuilder.buildStateBlueKml(state);
       await widget.lgController.sendKmlToMaster(kml);
+      if (!mounted) return;
+      widget.lgController.verifyKmlDelivery().then((s) {
+        if (mounted) setState(() => _kmlError = s);
+      });
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(
           lat: state.latitude,
@@ -91,27 +111,32 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
           tilt: 45,
         ),
       );
+      if (!mounted) return;
 
       await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
       if (irrData != null) {
         await _tts.speak(
           '${state.name} receives ${state.rainfall.toInt()} millimeters of annual rainfall. '
           '${state.irrigatedPercent} percent of rice area is irrigated. '
           'Major sources include tubewells at ${irrData['tubewell']}% and canals at ${irrData['canal']}%.',
         );
+        if (!mounted) return;
       }
       final safeName = stateName.toLowerCase().replaceAll(' ', '_');
       await widget.lgController.showDashboard(
         'assets/dashboards/dashboard_$safeName.png',
       );
+      if (!mounted) return;
     } catch (e) {
       _showError('Failed: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showError(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
@@ -124,6 +149,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
           child: Column(
             children: [
               _buildTopBar(),
+              _buildKmlErrorBanner(),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -188,6 +214,23 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKmlErrorBanner() {
+    if (_kmlError.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        _kmlError,
+        softWrap: true,
+        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
       ),
     );
   }
