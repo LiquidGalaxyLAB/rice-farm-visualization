@@ -233,40 +233,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              // Connect Button
-              SizedBox(
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _saveSettings,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.rocket_launch, size: 22),
-                  label: Text(
-                    _isLoading ? 'Connecting...' : 'Connect to LG',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+              // Connect / Disconnect Button (mutually exclusive)
+              if (!widget.sshController.isConnected)
+                SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _saveSettings,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.rocket_launch, size: 22),
+                    label: Text(
+                      _isLoading ? 'Connecting...' : 'Connect to LG',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              if (widget.sshController.isConnected) ...[
-                const SizedBox(height: 12),
+                )
+              else
                 SizedBox(
                   height: 56,
                   child: OutlinedButton.icon(
@@ -298,7 +298,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                 ),
-              ],
             ],
           ),
         ),

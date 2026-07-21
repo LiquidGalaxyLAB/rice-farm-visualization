@@ -19,6 +19,8 @@ class _RegionsScreenState extends State<RegionsScreen> {
   bool _isLoading = false;
   String? _activeState;
   final TtsService _tts = TtsService();
+  String _kmlError = '';
+  String? _orbitingState;
 
   @override
   void initState() {
@@ -39,23 +41,34 @@ class _RegionsScreenState extends State<RegionsScreen> {
   }
 
   Future<void> _showAllStates() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _kmlError = '';
+    });
     try {
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       final kml = _kmlBuilder.buildProductionKml();
       await widget.lgController.sendKmlToMaster(kml);
+      if (!mounted) return;
+      widget.lgController.verifyKmlDelivery().then((s) {
+        if (mounted) setState(() => _kmlError = s);
+      });
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 3500000, tilt: 30),
       );
+      if (!mounted) return;
       setState(() => _activeState = null);
       await widget.lgController.showDashboard(
         'assets/dashboards/dashboard_production.png',
       );
+      if (!mounted) return;
     } catch (e) {
       _showError('Failed to load: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -63,12 +76,19 @@ class _RegionsScreenState extends State<RegionsScreen> {
     setState(() {
       _isLoading = true;
       _activeState = state.name;
+      _kmlError = '';
     });
     try {
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       final kml = _kmlBuilder.buildStateFlyToKml(state);
       await widget.lgController.sendKmlToMaster(kml);
+      if (!mounted) return;
+      widget.lgController.verifyKmlDelivery().then((s) {
+        if (mounted) setState(() => _kmlError = s);
+      });
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(
           lat: state.latitude,
@@ -77,17 +97,48 @@ class _RegionsScreenState extends State<RegionsScreen> {
           tilt: 45,
         ),
       );
+      if (!mounted) return;
       await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
       final narration = _getNarration(state.name);
-      if (narration != null) await _tts.speak(narration);
+      if (narration != null) {
+        await _tts.speak(narration);
+        if (!mounted) return;
+      }
       final safeName = state.name.toLowerCase().replaceAll(' ', '_');
       await widget.lgController.showDashboard(
         'assets/dashboards/dashboard_$safeName.png',
       );
+      if (!mounted) return;
     } catch (e) {
       _showError('Failed to fly to ${state.name}: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _orbitState(StateData state) async {
+    if (_orbitingState == state.name) {
+      await widget.lgController.stopOrbit();
+      if (mounted) setState(() => _orbitingState = null);
+      return;
+    }
+    if (_orbitingState != null) return;
+    setState(() => _orbitingState = state.name);
+    try {
+      final orbitKml = _kmlBuilder.buildOrbitTourKml(
+        lat: state.latitude,
+        lng: state.longitude,
+        range: 500000,
+        tilt: 60,
+      );
+      await widget.lgController.startOrbit(orbitKml);
+      // Full orbit = 25 steps x 0.8s + load buffer
+      await Future.delayed(const Duration(seconds: 24));
+    } finally {
+      if (mounted && _orbitingState == state.name) {
+        setState(() => _orbitingState = null);
+      }
     }
   }
 
@@ -119,6 +170,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
   }
 
   void _showError(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
@@ -131,6 +183,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
           child: Column(
             children: [
               _buildTopBar(),
+              _buildKmlErrorBanner(),
               _buildActionButtons(),
               Expanded(child: _buildStateList()),
             ],
@@ -182,6 +235,23 @@ class _RegionsScreenState extends State<RegionsScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKmlErrorBanner() {
+    if (_kmlError.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        _kmlError,
+        softWrap: true,
+        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
       ),
     );
   }
@@ -268,6 +338,90 @@ class _RegionsScreenState extends State<RegionsScreen> {
     );
   }
 
+  Widget _buildOrbitPill(StateData state) {
+    final bool isActive = _orbitingState == state.name;
+    final bool isDisabled = _orbitingState != null && !isActive;
+
+    if (isActive) {
+      return GestureDetector(
+        onTap: () => _orbitState(state),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.redAccent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.stop, color: Colors.redAccent, size: 14),
+              SizedBox(width: 6),
+              Text(
+                'Stop',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (isDisabled) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.threesixty, color: Colors.grey, size: 14),
+            SizedBox(width: 6),
+            Text(
+              'Orbit',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () => _orbitState(state),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF42A5F5).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF42A5F5).withOpacity(0.3)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.threesixty, color: Color(0xFF42A5F5), size: 14),
+            SizedBox(width: 6),
+            Text(
+              'Orbit',
+              style: TextStyle(
+                color: Color(0xFF42A5F5),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStateCard(StateData state, int rank, bool isActive) {
     final maxProd = RiceStates.states
         .map((s) => s.production)
@@ -341,32 +495,39 @@ class _RegionsScreenState extends State<RegionsScreen> {
                   ),
                 ),
 
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF66BB6A).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF66BB6A).withOpacity(0.3),
-                    ),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.send, color: Color(0xFF66BB6A), size: 14),
-                      SizedBox(width: 6),
-                      Text(
-                        'Fly to',
-                        style: TextStyle(
-                          color: Color(0xFF66BB6A),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF66BB6A).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF66BB6A).withOpacity(0.3),
                         ),
                       ),
-                    ],
-                  ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.send, color: Color(0xFF66BB6A), size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                            'Fly to',
+                            style: TextStyle(
+                              color: Color(0xFF66BB6A),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    _buildOrbitPill(state),
+                  ],
                 ),
               ],
             ),

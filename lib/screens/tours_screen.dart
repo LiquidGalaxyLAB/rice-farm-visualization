@@ -20,6 +20,7 @@ class _ToursScreenState extends State<ToursScreen> {
   final TtsService _tts = TtsService();
   late final TourEngine _tourEngine;
   bool _tourActive = false;
+  String _kmlError = '';
 
   @override
   void initState() {
@@ -129,11 +130,19 @@ class _ToursScreenState extends State<ToursScreen> {
   Future<void> _startTour() async {
     final steps = _buildRiceBeltTour();
     _tourEngine.loadTour(steps);
-    setState(() => _tourActive = true);
+    setState(() {
+      _tourActive = true;
+      _kmlError = '';
+    });
     await widget.lgController.showDashboard(
       'assets/dashboards/dashboard_tour.png',
     );
+    if (!mounted) return;
     await _tourEngine.play();
+    if (!mounted) return;
+    widget.lgController.verifyKmlDelivery().then((s) {
+      if (mounted) setState(() => _kmlError = s);
+    });
   }
 
   @override
@@ -145,6 +154,7 @@ class _ToursScreenState extends State<ToursScreen> {
           child: Column(
             children: [
               _buildTopBar(),
+              _buildKmlErrorBanner(),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -170,11 +180,19 @@ class _ToursScreenState extends State<ToursScreen> {
                         onPlay: () async {
                           final steps = _buildIrrigationTour();
                           _tourEngine.loadTour(steps);
-                          setState(() => _tourActive = true);
+                          setState(() {
+                            _tourActive = true;
+                            _kmlError = '';
+                          });
                           await widget.lgController.showDashboard(
                             'assets/dashboards/dashboard_irrigation.png',
                           );
+                          if (!mounted) return;
                           await _tourEngine.play();
+                          if (!mounted) return;
+                          widget.lgController.verifyKmlDelivery().then((s) {
+                            if (mounted) setState(() => _kmlError = s);
+                          });
                         },
                       ),
                       const SizedBox(height: 12),
@@ -188,11 +206,19 @@ class _ToursScreenState extends State<ToursScreen> {
                         onPlay: () async {
                           final steps = _buildSeasonalTour();
                           _tourEngine.loadTour(steps);
-                          setState(() => _tourActive = true);
+                          setState(() {
+                            _tourActive = true;
+                            _kmlError = '';
+                          });
                           await widget.lgController.showDashboard(
                             'assets/dashboards/dashboard_crop_kharif.png',
                           );
+                          if (!mounted) return;
                           await _tourEngine.play();
+                          if (!mounted) return;
+                          widget.lgController.verifyKmlDelivery().then((s) {
+                            if (mounted) setState(() => _kmlError = s);
+                          });
                         },
                       ),
                       if (_tourActive) ...[
@@ -243,6 +269,23 @@ class _ToursScreenState extends State<ToursScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKmlErrorBanner() {
+    if (_kmlError.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        _kmlError,
+        softWrap: true,
+        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
       ),
     );
   }

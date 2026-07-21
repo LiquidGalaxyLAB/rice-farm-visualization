@@ -21,6 +21,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
   bool _isAutoPlaying = false;
   int _activeStageIndex = -1;
   bool _isKharif = true;
+  String _kmlError = '';
 
   CropCycle get _currentCycle =>
       _isKharif ? CropCycles.kharif : CropCycles.rabi;
@@ -50,25 +51,34 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
     setState(() {
       _isLoading = true;
       _activeStageIndex = index;
+      _kmlError = '';
     });
     try {
       final stage = _currentCycle.stages[index];
       await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       final kml = _kmlBuilder.buildCropCycleKml(stage.name, stage.color);
       await widget.lgController.sendKmlToMaster(kml);
+      if (!mounted) return;
+      widget.lgController.verifyKmlDelivery().then((s) {
+        if (mounted) setState(() => _kmlError = s);
+      });
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 4000000, tilt: 20),
       );
+      if (!mounted) return;
       await widget.lgController.showDashboard(
         _isKharif
             ? 'assets/dashboards/dashboard_crop_kharif.png'
             : 'assets/dashboards/dashboard_crop_rabi.png',
       );
+      if (!mounted) return;
     } catch (e) {
       _showError('Failed: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -96,6 +106,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
   }
 
   void _showError(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
@@ -108,6 +119,7 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
           child: Column(
             children: [
               _buildTopBar(),
+              _buildKmlErrorBanner(),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -173,6 +185,23 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKmlErrorBanner() {
+    if (_kmlError.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        _kmlError,
+        softWrap: true,
+        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
       ),
     );
   }

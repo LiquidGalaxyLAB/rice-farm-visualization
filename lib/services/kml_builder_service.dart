@@ -328,6 +328,46 @@ class KmlBuilderService {
     return sequence;
   }
 
+  /// Builds a gx:Tour KML that orbits a point a full 360 degrees
+  String buildOrbitTourKml({
+    required double lat,
+    required double lng,
+    double range = 500000,
+    double tilt = 60,
+  }) {
+    String flyTos = '';
+    for (int i = 0; i <= 24; i++) {
+      final heading = (i * 15) % 360;
+      flyTos +=
+          '''
+      <gx:FlyTo>
+        <gx:duration>0.8</gx:duration>
+        <gx:flyToMode>smooth</gx:flyToMode>
+        <LookAt>
+          <longitude>$lng</longitude>
+          <latitude>$lat</latitude>
+          <range>$range</range>
+          <tilt>$tilt</tilt>
+          <heading>$heading</heading>
+          <altitudeMode>relativeToGround</altitudeMode>
+        </LookAt>
+      </gx:FlyTo>
+''';
+    }
+    return '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+  <Document>
+    <name>OrbitDoc</name>
+    <gx:Tour>
+      <name>Orbit</name>
+      <gx:Playlist>
+$flyTos
+      </gx:Playlist>
+    </gx:Tour>
+  </Document>
+</kml>''';
+  }
+
   /// Builds KML with project logo overlay for left screen
   String buildBrandingOverlay(String logoUrl) {
     return '''<?xml version="1.0" encoding="UTF-8"?>
