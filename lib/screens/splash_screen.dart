@@ -29,8 +29,11 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Stack(
         children: [
           // Background image
-          SizedBox.expand(
-            child: Image.asset('assets/splash_bg.png', fit: BoxFit.cover),
+          Container(
+            color: Colors.white,
+            child: Center(
+              child: Image.asset('assets/splash_bg.png', fit: BoxFit.contain),
+            ),
           ),
           // Real animated spinner overlaid on top
           Positioned(

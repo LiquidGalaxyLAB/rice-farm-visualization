@@ -55,24 +55,29 @@ class _CropCycleScreenState extends State<CropCycleScreen> {
     });
     try {
       final stage = _currentCycle.stages[index];
-      await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
-      if (!mounted) return;
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (!mounted) return;
+      // await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      // if (!mounted) return;
+      // await Future.delayed(const Duration(milliseconds: 300));
+      // if (!mounted) return;
       final kml = _kmlBuilder.buildCropCycleKml(stage.name, stage.color);
       await widget.lgController.sendKmlToMaster(kml);
       if (!mounted) return;
-      widget.lgController.verifyKmlDelivery().then((s) {
-        if (mounted) setState(() => _kmlError = s);
+
+      Future.delayed(const Duration(seconds: 2), () {
+        widget.lgController.verifyKmlDelivery().then((s) {
+          if (mounted) setState(() => _kmlError = s);
+        });
       });
+
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 4000000, tilt: 20),
       );
       if (!mounted) return;
-      await widget.lgController.showDashboard(
-        _isKharif
-            ? 'assets/dashboards/dashboard_crop_kharif.png'
-            : 'assets/dashboards/dashboard_crop_rabi.png',
+      await widget.lgController.showCropDashboard(
+        season: _isKharif ? 'Kharif' : 'Rabi',
+        stageName: stage.name,
+        months: stage.months,
+        description: stage.description,
       );
       if (!mounted) return;
     } catch (e) {

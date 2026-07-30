@@ -59,8 +59,8 @@ class TourEngine {
 
       try {
         // Clear previous KML
-        await lgController.safeExecute('> /var/www/html/kmls.txt');
-        await Future.delayed(const Duration(milliseconds: 300));
+        // await lgController.safeExecute('> /var/www/html/kmls.txt');
+        // await Future.delayed(const Duration(milliseconds: 300));
 
         // Send KML if this step has one
         if (step.kmlAction != null) {

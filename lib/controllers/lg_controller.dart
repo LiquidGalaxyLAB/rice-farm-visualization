@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'ssh_controller.dart';
 import 'settings_controller.dart';
 import '../services/kml_builder_service.dart';
+import '../data/rice_states.dart';
+import '../data/irrigation_data.dart';
+import '../models/state_data.dart';
 
 class LGController {
   LGController({
@@ -16,9 +19,75 @@ class LGController {
 
   int screenAmount;
   String lastKmlFilename = '';
+  String _lastColoredKml = '';
 
   bool get isConnected => _sshController.isConnected;
   String? get lastError => _sshController.lastError;
+
+  /// Minimal valid empty KML — used to blank master.kml instead of
+  /// leaving a zero-byte file that GE may reject as invalid.
+  static const String _emptyKml =
+      '<?xml version="1.0" encoding="UTF-8"?>'
+      '<kml xmlns="http://www.opengis.net/kml/2.2"><Document></Document></kml>';
+
+  /// One-time permissions setup so per-send chmod is never needed.
+  Future<void> _initializePermissions() async {
+    final pw = _settingsController.lgPassword;
+    await safeExecute(
+      'echo $pw | sudo -S chmod 777 /var/www/html/kml && '
+      'echo $pw | sudo -S touch /var/www/html/kmls.txt && '
+      'echo $pw | sudo -S chmod 777 /var/www/html/kmls.txt',
+    );
+  }
+
+  /// Enables a 3s refresh on the master.kml NetworkLink on EVERY machine.
+  /// All screens (master + slaves) have this link in their myplaces.kml —
+  /// with refresh active, any write to master.kml renders on all screens
+  /// within 3 seconds (the "data on all screens" architecture).
+  /// Idempotent: strips existing refresh tags before adding, handles both
+  /// href formats (with and without leading slash).
+  Future<void> enableMasterRefresh() async {
+    // sed pair: strip any existing refresh, then add a fresh one.
+    // %s is replaced per-format below.
+    String sedPair(String href, String file) =>
+        'sed -i "s|<href>$href</href>'
+        '<refreshMode>onInterval</refreshMode>'
+        '<refreshInterval>[0-9]*</refreshInterval>|'
+        '<href>$href</href>|" $file ; '
+        'sed -i "s|<href>$href</href>|'
+        '<href>$href</href>'
+        '<refreshMode>onInterval</refreshMode>'
+        '<refreshInterval>3</refreshInterval>|" $file';
+
+    const hrefSlash = '##LG_PHPIFACE##/kml/master.kml';
+    const hrefNoSlash = '##LG_PHPIFACE##kml/master.kml';
+
+    // 1. Master machine (local file)
+    try {
+      await safeExecute(
+        '${sedPair(hrefSlash, '~/earth/kml/master/myplaces.kml')} ; '
+        '${sedPair(hrefNoSlash, '~/earth/kml/master/myplaces.kml')}',
+      );
+    } catch (e) {
+      debugPrint('Master refresh on master failed: $e');
+    }
+
+    // 2. Every slave machine (remote via ssh)
+    final password = _settingsController.lgPassword;
+    for (int i = 2; i <= screenAmount; i++) {
+      try {
+        final inner =
+            '${sedPair(hrefSlash, '~/earth/kml/slave/myplaces.kml')} ; '
+            '${sedPair(hrefNoSlash, '~/earth/kml/slave/myplaces.kml')}';
+        await executeCommand(
+          'sshpass -p $password ssh -o StrictHostKeyChecking=no lg@lg$i '
+          "'$inner'",
+        );
+      } catch (e) {
+        debugPrint('Master refresh on slave $i failed: $e');
+      }
+    }
+  }
 
   Future<bool> connect({
     required String host,
@@ -43,7 +112,10 @@ class LGController {
       );
       await detectScreenCount();
       await enableSlaveRefresh();
-      await showBranding();
+      await enableMasterRefresh();
+      await _initializePermissions();
+      await clearKmls(keepLogos: false); // fresh slate on every connect
+      await showBranding(); // then paint the logo clean
     }
 
     return success;
@@ -53,7 +125,7 @@ class LGController {
     _sshController.disconnect();
   }
 
-  /// Reconnects using saved settings
+  /// Full reconnect using saved settings (user-facing — purges state).
   Future<bool> reconnect() async {
     try {
       _sshController.disconnect();
@@ -66,6 +138,24 @@ class LGController {
       );
     } catch (e) {
       debugPrint('Reconnect failed: $e');
+      return false;
+    }
+  }
+
+  /// Lightweight session re-establish for mid-operation recovery.
+  /// Does NOT purge KMLs or repaint branding — only restores the session.
+  Future<bool> _restoreSession() async {
+    try {
+      _sshController.disconnect();
+      await Future.delayed(const Duration(milliseconds: 500));
+      return await _sshController.connect(
+        host: _settingsController.lgHost,
+        port: _settingsController.lgPort,
+        username: _settingsController.lgUsername,
+        password: _settingsController.lgPassword,
+      );
+    } catch (e) {
+      debugPrint('Session restore failed: $e');
       return false;
     }
   }
@@ -85,13 +175,13 @@ class LGController {
     }
   }
 
-  /// Executes a command with auto-reconnect on failure
+  /// Executes a command with session-restore on failure
   Future<String> safeExecute(String command) async {
     try {
       return await executeCommand(command);
     } catch (e) {
-      debugPrint('Command failed, reconnecting: $e');
-      final success = await reconnect();
+      debugPrint('Command failed, restoring session: $e');
+      final success = await _restoreSession();
       if (success) {
         return await executeCommand(command);
       }
@@ -99,13 +189,13 @@ class LGController {
     }
   }
 
-  /// Sends query with auto-reconnect on failure
+  /// Sends query with session-restore on failure
   Future<void> safeQuery(String content) async {
     try {
       await query(content);
     } catch (e) {
-      debugPrint('Query failed, reconnecting: $e');
-      final success = await reconnect();
+      debugPrint('Query failed, restoring session: $e');
+      final success = await _restoreSession();
       if (success) {
         await query(content);
       }
@@ -179,68 +269,94 @@ class LGController {
     await executeCommand('echo "$content" > /tmp/query.txt');
   }
 
-  Future<void> forceRefresh() async {
-    if (!isConnected) return;
-
-    await executeCommand('touch /var/www/html/kmls.txt');
-    await query('search=http://${_settingsController.lgHost}:81/kmls.txt');
-    await Future.delayed(const Duration(seconds: 2));
+  /// Uploads a KML via SFTP to a hidden temp file, then atomically moves
+  /// it to the destination. SFTP removes all shell-escaping fragility
+  /// (the source of the intermittent failures); the mv guarantees GE's
+  /// 3s refresh never reads a half-written file.
+  Future<void> _atomicUpload(String content, String destPath) async {
+    const tmpPath = '/var/www/html/kml/.upload_tmp.kml';
+    await _sshController.uploadString(content, tmpPath);
+    await safeExecute('mv $tmpPath $destPath');
   }
 
+  /// Sends a colored KML so it renders on ALL screens:
+  /// master.kml — every machine's GE watches this file with a 3s refresh
+  /// (set at connect). Also mirrors to rice_viz.kml + kmls.txt for the
+  /// sync_nlc path as a second delivery route.
   Future<void> sendKmlToMaster(
     String kmlContent, {
     String prefix = 'rice_viz',
   }) async {
     if (!isConnected) {
-      await reconnect();
+      await _restoreSession();
     }
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    lastKmlFilename = 't=$timestamp';
+    _lastColoredKml = kmlContent;
 
-    // Unique name every send -> new md5 in sync_nlc.php ->
-    // all screens get a Create and download the fresh KML
-    final filename = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.kml';
-    lastKmlFilename = filename;
-
-    // Empty the list and remove old files
-    await safeExecute('> /var/www/html/kmls.txt');
-    await safeExecute('rm -f /var/www/html/kml/${prefix}_*.kml');
-    await safeExecute('rm -f /var/www/html/${prefix}_*.kml');
-
-    await _sshController.uploadString(
-      kmlContent,
-      '/var/www/html/kml/$filename',
-    );
-    await safeExecute('chmod 644 /var/www/html/kml/$filename');
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
+    // SFTP upload once, then cp + atomic mv + announce in one channel
+    const tmpPath = '/var/www/html/kml/.upload_tmp.kml';
+    await _sshController.uploadString(kmlContent, tmpPath);
     await safeExecute(
-      'echo "http://${_settingsController.lgHost}:81/kml/$filename" > /var/www/html/kmls.txt',
+      'cp $tmpPath /var/www/html/kml/rice_viz.kml ; '
+      'mv $tmpPath /var/www/html/kml/master.kml ; '
+      "echo 'http://lg1:81/kml/rice_viz.kml?t=$timestamp' > /var/www/html/kmls.txt",
     );
   }
 
-  /// Uploads an orbit tour KML and starts playing it.
-  /// Appends to kmls.txt so the current colored KML stays visible.
+  /// Starts an orbit tour. The tour is merged with the current colored
+  /// polygons into master.kml (all screens watch it), so the colors stay
+  /// visible while the orbit plays. Also mirrors to orbit.kml + kmls.txt.
   Future<void> startOrbit(String orbitKml) async {
     if (!isConnected) {
-      await reconnect();
+      await _restoreSession();
     }
-    final filename = 'orbit_${DateTime.now().millisecondsSinceEpoch}.kml';
-    await safeExecute('rm -f /var/www/html/kml/orbit_*.kml');
-    await safeExecute('rm -f /var/www/html/orbit_*.kml');
-    await _sshController.uploadString(orbitKml, '/var/www/html/kml/$filename');
-    await safeExecute('chmod 644 /var/www/html/kml/$filename');
-    await Future.delayed(const Duration(milliseconds: 500));
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    // Merge: colored polygons + orbit tour in a single Document
+    String coloredInner = '';
+    if (_lastColoredKml.isNotEmpty) {
+      final s = _lastColoredKml.indexOf('<Document>');
+      final e = _lastColoredKml.lastIndexOf('</Document>');
+      if (s != -1 && e != -1) {
+        coloredInner = _lastColoredKml.substring(s + '<Document>'.length, e);
+      }
+    }
+    String orbitInner = orbitKml;
+    final os = orbitKml.indexOf('<Document>');
+    final oe = orbitKml.lastIndexOf('</Document>');
+    if (os != -1 && oe != -1) {
+      orbitInner = orbitKml.substring(os + '<Document>'.length, oe);
+    }
+
+    final combined =
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<kml xmlns="http://www.opengis.net/kml/2.2" '
+        'xmlns:gx="http://www.google.com/kml/ext/2.2">'
+        '<Document>$coloredInner$orbitInner</Document></kml>';
+
+    // Upload combined -> master.kml (atomic), orbit-only -> orbit.kml
+    await _atomicUpload(combined, '/var/www/html/kml/master.kml');
+    await _sshController.uploadString(orbitKml, '/var/www/html/kml/orbit.kml');
     await safeExecute(
-      'echo "http://${_settingsController.lgHost}:81/kml/$filename" >> /var/www/html/kmls.txt',
+      "echo 'http://lg1:81/kml/orbit.kml?t=$timestamp' >> /var/www/html/kmls.txt",
     );
-    // Give screens time to load the tour, then play it
-    await Future.delayed(const Duration(milliseconds: 2500));
+
+    // One refresh cycle (3s) for every screen to load the tour, then play
+    await Future.delayed(const Duration(milliseconds: 3500));
     await safeExecute('echo "playtour=Orbit" > /tmp/query.txt');
   }
 
-  /// Stops a running orbit tour
+  /// Stops a running orbit and restores the colored polygons to master.kml
   Future<void> stopOrbit() async {
     await safeExecute('echo "exittour=true" > /tmp/query.txt');
+    if (_lastColoredKml.isNotEmpty) {
+      try {
+        await _atomicUpload(_lastColoredKml, '/var/www/html/kml/master.kml');
+      } catch (e) {
+        debugPrint('Restore after orbit failed: $e');
+      }
+    }
   }
 
   /// Collapses whitespace/newlines and caps length so error banners stay readable.
@@ -251,20 +367,21 @@ class LGController {
         : collapsed;
   }
 
-  /// Read-only diagnostic for the kmls.txt delivery pipeline.
+  /// Read-only diagnostic for the KML delivery pipeline.
   /// Returns '' if all checks pass, otherwise a descriptive error string.
   Future<String> verifyKmlDelivery() async {
-    final url = 'http://${_settingsController.lgHost}:81/kml/$lastKmlFilename';
     try {
       final kmlsTxt = await safeExecute('cat /var/www/html/kmls.txt');
       if (!kmlsTxt.contains(lastKmlFilename)) {
-        return 'KML ERROR [1/3] kmls.txt does not contain the sent file.\n'
+        return 'KML ERROR [1/3] kmls.txt does not contain the sent version.\n'
             'Expected: $lastKmlFilename\n'
             'Actual content: "${_trimOutput(kmlsTxt, 120)}"';
       }
 
+      final url = kmlsTxt.trim().split('\n').first;
+
       final masterCode = await safeExecute(
-        'curl -s -o /dev/null -w "%{http_code}" $url',
+        'curl -s -o /dev/null -w "%{http_code}" "$url"',
       );
       final code = masterCode.trim();
       if (code != '200') {
@@ -277,7 +394,7 @@ class LGController {
             meaning = 'file not found at this path';
             break;
           case '000':
-            meaning = 'connection failed - Apache/port 81 not reachable';
+            meaning = 'connection failed - Apache/port 81 not reachable on lg1';
             break;
           default:
             meaning = 'unexpected response';
@@ -289,14 +406,14 @@ class LGController {
 
       final password = _settingsController.lgPassword;
       final slaveOutput = await executeCommand(
-        'sshpass -p $password ssh -o StrictHostKeyChecking=no -o ConnectTimeout=4 lg2 '
-        '"curl -s -o /dev/null -w \'%{http_code}\' $url"',
+        'sshpass -p $password ssh -o StrictHostKeyChecking=no -o ConnectTimeout=4 lg@lg2 '
+        '"curl -s -o /dev/null -w \'%{http_code}\' \\"$url\\""',
       );
       if (!slaveOutput.contains('200')) {
         return 'KML ERROR [3/3] slave lg2 cannot download the KML.\n'
             'URL: $url\n'
             'slave response: "${_trimOutput(slaveOutput, 120)}"\n'
-            '(master IP unreachable from slave, or curl/ssh issue on rig)';
+            '(lg1 not resolvable from slave, or curl/ssh issue on rig)';
       }
 
       debugPrint('KML VERIFY OK: $url served to master and slave');
@@ -358,7 +475,7 @@ class LGController {
   Future<void> showBranding() async {
     if (!isConnected) return;
 
-    final logoUrl = 'http://${_settingsController.lgHost}:81/kml/logo.png';
+    final logoUrl = 'http://lg1:81/kml/logo.png';
 
     // Upload project logo
     await _sshController.uploadAsset(
@@ -372,77 +489,172 @@ class LGController {
     await sendKMLToSlave(firstScreen, brandingKml);
   }
 
-  /// Shows a dashboard image on the right slave screen
+  /// Shows a dashboard image as an HTML balloon on the right slave screen.
+  /// Uploads the PNG once, then renders it full-width via BalloonStyle —
+  /// no ScreenOverlay sizing, no aspect-ratio stretching.
+  /// Sends a pre-built dashboard balloon KML to the right slave screen.
+  int _stateYield(StateData s) => s.yield.toInt();
+  Future<void> showDashboardBalloon(String balloonKml) async {
+    if (!isConnected) return;
+    await sendKMLToSlave(lastScreen, balloonKml);
+  }
+
   Future<void> showDashboard(String assetPath) async {
     if (!isConnected) return;
 
-    final rightScreen = lastScreen;
-    final dashUrl = 'http://${_settingsController.lgHost}:81/kml/dashboard.png';
+    final kml = KmlBuilderService();
+    final file = assetPath.split('/').last.replaceAll('.png', '');
 
-    // Clear the old dashboard first
-    final blankKml =
-        '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document id="slave_$rightScreen">
-  </Document>
-</kml>''';
-    await sendKMLToSlave(rightScreen, blankKml);
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    // Upload the new dashboard image
-    await _sshController.uploadAsset(
-      assetPath,
-      '/var/www/html/kml/dashboard.png',
+    final national = kml.buildNationalDashboard(
+      totalProduction: RiceStates.totalProduction,
+      totalArea: RiceStates.totalArea,
+      avgYield: RiceStates.averageYield,
     );
-    await executeCommand('chmod 644 /var/www/html/kml/dashboard.png');
-    await Future.delayed(const Duration(milliseconds: 300));
 
-    // Create ScreenOverlay KML
-    final dashKml =
-        '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Dashboard</name>
-    <ScreenOverlay>
-      <name>Stats Dashboard</name>
-      <Icon>
-        <href>$dashUrl</href>
-      </Icon>
-      <color>ffffffff</color>
-      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
-      <size x="0.53" y="0.89" xunits="fraction" yunits="fraction"/>
-    </ScreenOverlay>
-  </Document>
-</kml>''';
+    String balloon = national;
 
-    await sendKMLToSlave(rightScreen, dashKml);
+    // Extract a clean state key by stripping known prefixes
+    String stateKey = file
+        .replaceFirst('dashboard_', '')
+        .replaceFirst('irrigation_', '')
+        .replaceAll('_', ' ');
+
+    final isIrrigation = file.contains('irrigation');
+
+    if (file.contains('crop')) {
+      balloon = national; // crop handled by showCropDashboard now
+    } else if (file == 'dashboard_production' || file == 'dashboard_tour') {
+      balloon = national;
+    } else if (isIrrigation && stateKey.trim().isEmpty) {
+      // Bare "dashboard_irrigation" (entry default) → national for now
+      balloon = national;
+    } else {
+      final matches = RiceStates.states.where(
+        (s) => s.name.toLowerCase() == stateKey,
+      );
+      if (matches.isNotEmpty) {
+        final s = matches.first;
+        final irr = IrrigationData.stateWise[s.name];
+        if (isIrrigation && irr != null) {
+          balloon = kml.buildIrrigationDashboard(
+            name: s.name,
+            canal: (irr['canal'] as num).toDouble(),
+            tubewell: (irr['tubewell'] as num).toDouble(),
+            tank: (irr['tank'] as num).toDouble(),
+            other: (irr['other'] as num).toDouble(),
+            lat: s.latitude,
+            lon: s.longitude,
+          );
+        } else {
+          balloon = kml.buildStateDashboard(
+            name: s.name,
+            production: s.production,
+            area: s.area,
+            yieldValue: _stateYield(s),
+            rainfall: s.rainfall.toInt(),
+            irrigatedPercent: s.irrigatedPercent,
+            lat: s.latitude,
+            lon: s.longitude,
+          );
+        }
+      }
+    }
+
+    await sendKMLToSlave(lastScreen, balloon);
   }
 
-  /// Shows both branding and stats
+  /// Crop stage dashboard — pass the actual stage.
+  Future<void> showCropDashboard({
+    required String season,
+    required String stageName,
+    required String months,
+    required String description,
+  }) async {
+    if (!isConnected) return;
+    final kml = KmlBuilderService();
+    final balloon = kml.buildCropStageDashboard(
+      season: season,
+      stageName: stageName,
+      months: months,
+      description: description,
+    );
+    await sendKMLToSlave(lastScreen, balloon);
+  }
+
+  /// State dashboard — production profile.
+  Future<void> showStateDashboard(StateData s) async {
+    if (!isConnected) return;
+    final kml = KmlBuilderService();
+    final balloon = kml.buildStateDashboard(
+      name: s.name,
+      production: s.production,
+      area: s.area,
+      yieldValue: _stateYield(s),
+      rainfall: s.rainfall.toInt(),
+      irrigatedPercent: s.irrigatedPercent,
+      lat: s.latitude,
+      lon: s.longitude,
+    );
+    await sendKMLToSlave(lastScreen, balloon);
+  }
+
+  /// Irrigation dashboard — source breakdown for a state.
+  Future<void> showIrrigationDashboard(StateData s) async {
+    if (!isConnected) return;
+    final irr = IrrigationData.stateWise[s.name];
+    if (irr == null) return showStateDashboard(s);
+    final kml = KmlBuilderService();
+    final balloon = kml.buildIrrigationDashboard(
+      name: s.name,
+      canal: (irr['canal'] as num).toDouble(),
+      tubewell: (irr['tubewell'] as num).toDouble(),
+      tank: (irr['tank'] as num).toDouble(),
+      other: (irr['other'] as num).toDouble(),
+      lat: s.latitude,
+      lon: s.longitude,
+    );
+    await sendKMLToSlave(lastScreen, balloon);
+  }
+
+  /// National overview dashboard.
+  Future<void> showNationalDashboard() async {
+    if (!isConnected) return;
+    final kml = KmlBuilderService();
+    final balloon = kml.buildNationalDashboard(
+      totalProduction: RiceStates.totalProduction,
+      totalArea: RiceStates.totalArea,
+      avgYield: RiceStates.averageYield,
+    );
+    await sendKMLToSlave(lastScreen, balloon);
+  }
+
   /// Shows both branding and dashboard
   Future<void> showSideScreens({
     String dashboardAsset = 'assets/dashboards/dashboard_production.png',
   }) async {
     await showBranding();
     await Future.delayed(const Duration(milliseconds: 500));
-    await showDashboard(dashboardAsset);
   }
 
+  /// Clears all visualization state. Single atomic channel + slave loop.
   Future<void> clearKmls({bool keepLogos = true}) async {
     if (!isConnected) {
-      await reconnect();
+      await _restoreSession();
     }
+    _lastColoredKml = '';
 
-    await safeExecute('echo "exittour=true" > /tmp/query.txt');
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    await safeExecute('> /var/www/html/kmls.txt');
-    await safeExecute('rm -f /var/www/html/rice_viz.kml');
-    await safeExecute('rm -f /var/www/html/kml/rice_viz_*.kml');
-    await safeExecute('rm -f /var/www/html/kml/orbit_*.kml');
-    await safeExecute('rm -f /var/www/html/kml/dashboard.png');
+    await safeExecute(
+      'echo "exittour=true" > /tmp/query.txt; '
+      '> /var/www/html/kmls.txt; '
+      'rm -f /var/www/html/rice_viz.kml; '
+      'rm -f /var/www/html/kml/rice_viz.kml; '
+      'rm -f /var/www/html/kml/rice_viz_*.kml; '
+      'rm -f /var/www/html/kml/orbit.kml; '
+      'rm -f /var/www/html/kml/orbit_*.kml; '
+      'rm -f /var/www/html/kml/.upload_tmp.kml; '
+      'rm -f /var/www/html/kml/dashboard.png; '
+      "echo '$_emptyKml' > /var/www/html/kml/master.kml",
+    );
     await Future.delayed(const Duration(milliseconds: 300));
 
     // Clear all slave screens
