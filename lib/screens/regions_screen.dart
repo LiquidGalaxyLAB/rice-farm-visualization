@@ -46,15 +46,17 @@ class _RegionsScreenState extends State<RegionsScreen> {
       _kmlError = '';
     });
     try {
-      await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
-      if (!mounted) return;
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (!mounted) return;
+      // await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      // if (!mounted) return;
+      // await Future.delayed(const Duration(milliseconds: 300));
+      // if (!mounted) return;
       final kml = _kmlBuilder.buildProductionKml();
       await widget.lgController.sendKmlToMaster(kml);
       if (!mounted) return;
-      widget.lgController.verifyKmlDelivery().then((s) {
-        if (mounted) setState(() => _kmlError = s);
+      Future.delayed(const Duration(seconds: 2), () {
+        widget.lgController.verifyKmlDelivery().then((s) {
+          if (mounted) setState(() => _kmlError = s);
+        });
       });
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(lat: 22.0, lng: 82.0, range: 3500000, tilt: 30),
@@ -79,15 +81,17 @@ class _RegionsScreenState extends State<RegionsScreen> {
       _kmlError = '';
     });
     try {
-      await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
-      if (!mounted) return;
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (!mounted) return;
+      // await widget.lgController.safeExecute('> /var/www/html/kmls.txt');
+      // if (!mounted) return;
+      // await Future.delayed(const Duration(milliseconds: 300));
+      // if (!mounted) return;
       final kml = _kmlBuilder.buildStateFlyToKml(state);
       await widget.lgController.sendKmlToMaster(kml);
       if (!mounted) return;
-      widget.lgController.verifyKmlDelivery().then((s) {
-        if (mounted) setState(() => _kmlError = s);
+      Future.delayed(const Duration(seconds: 2), () {
+        widget.lgController.verifyKmlDelivery().then((s) {
+          if (mounted) setState(() => _kmlError = s);
+        });
       });
       await widget.lgController.safeQuery(
         _kmlBuilder.buildLookAt(

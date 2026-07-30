@@ -8,11 +8,20 @@ import 'package:flutter/services.dart';
 
 class SSHController {
   SSHClient? _client;
+  SftpClient? _sftpClient;
   String? _lastError;
   bool _isConnected = false;
 
   bool get isConnected => _isConnected;
   String? get lastError => _lastError;
+
+  /// Reuses ONE SFTP channel per session instead of opening (and leaking)
+  /// a new one on every upload.
+  Future<SftpClient> _getSftp() async {
+    if (_sftpClient != null) return _sftpClient!;
+    _sftpClient = await _client!.sftp();
+    return _sftpClient!;
+  }
 
   Future<bool> connect({
     required String host,
@@ -86,6 +95,7 @@ class SSHController {
 
   void disconnect() {
     if (_client != null) {
+      _sftpClient = null;
       _client!.close();
       _client = null;
       _isConnected = false;
@@ -121,20 +131,26 @@ class SSHController {
       throw Exception('Local file does not exist: $localPath');
     }
 
-    final fileBytes = await file.readAsBytes();
-    final sftp = await _client!.sftp();
-    final remoteFile = await sftp.open(
-      remotePath,
-      mode:
-          SftpFileOpenMode.create |
-          SftpFileOpenMode.write |
-          SftpFileOpenMode.truncate,
-    );
+    try {
+      final fileBytes = await file.readAsBytes();
+      final sftp = await _getSftp();
+      final remoteFile = await sftp.open(
+        remotePath,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.write |
+            SftpFileOpenMode.truncate,
+      );
 
-    await remoteFile.writeBytes(fileBytes);
-    await remoteFile.close();
+      await remoteFile.writeBytes(fileBytes);
+      await remoteFile.close();
 
-    return true;
+      return true;
+    } catch (e) {
+      // Cached SFTP session may be dead — drop it so the next call reopens
+      _sftpClient = null;
+      rethrow;
+    }
   }
 
   Future<bool> uploadAsset(String assetPath, String remotePath) async {
@@ -142,22 +158,27 @@ class SSHController {
       throw Exception('Not connected to SSH server');
     }
 
-    final ByteData data = await rootBundle.load(assetPath);
-    final fileBytes = data.buffer.asUint8List();
+    try {
+      final ByteData data = await rootBundle.load(assetPath);
+      final fileBytes = data.buffer.asUint8List();
 
-    final sftp = await _client!.sftp();
-    final remoteFile = await sftp.open(
-      remotePath,
-      mode:
-          SftpFileOpenMode.create |
-          SftpFileOpenMode.write |
-          SftpFileOpenMode.truncate,
-    );
+      final sftp = await _getSftp();
+      final remoteFile = await sftp.open(
+        remotePath,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.write |
+            SftpFileOpenMode.truncate,
+      );
 
-    await remoteFile.writeBytes(fileBytes);
-    await remoteFile.close();
+      await remoteFile.writeBytes(fileBytes);
+      await remoteFile.close();
 
-    return true;
+      return true;
+    } catch (e) {
+      _sftpClient = null;
+      rethrow;
+    }
   }
 
   Future<bool> uploadString(String content, String remotePath) async {
@@ -165,20 +186,25 @@ class SSHController {
       throw Exception('Not connected');
     }
 
-    final sftp = await _client!.sftp();
-    final remoteFile = await sftp.open(
-      remotePath,
-      mode:
-          SftpFileOpenMode.create |
-          SftpFileOpenMode.write |
-          SftpFileOpenMode.truncate,
-    );
+    try {
+      final sftp = await _getSftp();
+      final remoteFile = await sftp.open(
+        remotePath,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.write |
+            SftpFileOpenMode.truncate,
+      );
 
-    final bytes = Uint8List.fromList(utf8.encode(content));
-    await remoteFile.writeBytes(bytes);
-    await remoteFile.close();
+      final bytes = Uint8List.fromList(utf8.encode(content));
+      await remoteFile.writeBytes(bytes);
+      await remoteFile.close();
 
-    return true;
+      return true;
+    } catch (e) {
+      _sftpClient = null;
+      rethrow;
+    }
   }
 
   static String _getErrorMessage(String errorType, String originalError) {

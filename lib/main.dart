@@ -11,7 +11,7 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   debugPrint(
-    '=== RICE FARM BUILD v5: kml-folder + master-IP + diagnostics ===',
+    '=== RICE FARM BUILD v6: lg1 + absolute-3D + compound-SSH + connect-purge ===',
   );
   WidgetsFlutterBinding.ensureInitialized();
 

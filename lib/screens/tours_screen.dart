@@ -134,9 +134,7 @@ class _ToursScreenState extends State<ToursScreen> {
       _tourActive = true;
       _kmlError = '';
     });
-    await widget.lgController.showDashboard(
-      'assets/dashboards/dashboard_tour.png',
-    );
+    await widget.lgController.showNationalDashboard();
     if (!mounted) return;
     await _tourEngine.play();
     if (!mounted) return;
@@ -184,9 +182,7 @@ class _ToursScreenState extends State<ToursScreen> {
                             _tourActive = true;
                             _kmlError = '';
                           });
-                          await widget.lgController.showDashboard(
-                            'assets/dashboards/dashboard_irrigation.png',
-                          );
+                          await widget.lgController.showNationalDashboard();
                           if (!mounted) return;
                           await _tourEngine.play();
                           if (!mounted) return;
@@ -210,9 +206,7 @@ class _ToursScreenState extends State<ToursScreen> {
                             _tourActive = true;
                             _kmlError = '';
                           });
-                          await widget.lgController.showDashboard(
-                            'assets/dashboards/dashboard_crop_kharif.png',
-                          );
+                          await widget.lgController.showNationalDashboard();
                           if (!mounted) return;
                           await _tourEngine.play();
                           if (!mounted) return;
