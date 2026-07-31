@@ -7,6 +7,8 @@ class TourStep {
   final double tilt;
   final double heading;
   final String? kmlAction; // which KML to show during this step
+  final String?
+  dashboardKey; // e.g. state name, or 'irrigation:StateName', or 'crop:Kharif:Sowing'
 
   const TourStep({
     required this.title,
@@ -17,5 +19,6 @@ class TourStep {
     this.tilt = 0,
     this.heading = 0,
     this.kmlAction,
+    this.dashboardKey,
   });
 }

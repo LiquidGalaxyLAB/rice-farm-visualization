@@ -36,6 +36,31 @@ class KmlBuilderService {
     return _wrapInKmlDocument('Rice Production by State', placemarks);
   }
 
+  /// Production map colored by 4 tiers — used ONLY by the Rice Belt tour.
+  String buildProductionTierKml() {
+    final states = RiceStates.states;
+    String placemarks = '';
+    for (final state in states) {
+      final coords = StateBoundaries.boundaries[state.name];
+      if (coords == null || coords.isEmpty) continue;
+      final maxProduction = states
+          .map((s) => s.production)
+          .reduce((a, b) => a > b ? a : b);
+      final height = (state.production / maxProduction * 80000).toInt() + 5000;
+      placemarks += _buildStatePolygon(
+        name: state.name,
+        coords: coords,
+        color: _productionTierColor(state.production),
+        height: height,
+        description:
+            'Production: ${state.production}M tonnes\\n'
+            'Area: ${state.area}M hectares\\n'
+            'Yield: ${state.yield.toInt()} kg/ha',
+      );
+    }
+    return _wrapInKmlDocument('Rice Production by State', placemarks);
+  }
+
   /// Builds KML with color gradient for ALL 36 Indian states
   String buildProductionHeatmapKml() {
     final allBoundaries = AllStateBoundaries.boundaries;
@@ -118,6 +143,22 @@ class KmlBuilderService {
     return _wrapInKmlDocument('India Rice Production Heatmap', placemarks);
   }
 
+  /// Color a state by production: red (low) → orange → blue → green (high)
+  /// Color a state by production: red (low) → orange → blue → green (high).
+  /// KML color format is aabbggrr (alpha, blue, green, red).
+  String _productionTierColor(double production) {
+    if (production >= 12) {
+      return 'ff00cc44'; // green - highest
+    }
+    if (production >= 7) {
+      return 'ffffcc00'; // blue - high
+    }
+    if (production >= 5) {
+      return 'ff0088ff'; // orange - mid
+    }
+    return 'ff2222dd'; // red - lowest
+  }
+
   /// Builds KML highlighting a single state with a label
   String buildStateFlyToKml(StateData state) {
     final coords = StateBoundaries.boundaries[state.name];
@@ -126,7 +167,7 @@ class KmlBuilderService {
     final placemark = _buildStatePolygon(
       name: state.name,
       coords: coords,
-      color: 'ff00cc44',
+      color: _productionTierColor(state.production),
       height: 40000,
       description:
           'Production: ${state.production}M tonnes\\n'
@@ -530,11 +571,11 @@ $content
   /// A single stat card cell (used inside the cards row).
   String _statCard(String value, String label, String accent) =>
       '''
-                      <td width="25%" align="center" valign="top" style="padding:10px;">
-                        <table width="100%" cellpadding="12" cellspacing="0" style="background-color:#161b22;border:1px solid #30363d;border-radius:12px;">
-                          <tr><td align="center" style="border-top:4px solid $accent;border-radius:2px;">
-                            <span style="font-size:30px;font-weight:bold;color:#ffffff;">$value</span><br>
-                            <span style="font-size:13px;color:#8b949e;">$label</span>
+                     <td width="25%" align="center" valign="top" style="padding:15px;">
+                        <table width="100%" cellpadding="18" cellspacing="0" style="background-color:#161b22;border:1px solid #30363d;border-radius:12px;">
+                          <tr><td align="center" style="border-top:6px solid $accent;border-radius:2px;">
+                            <span style="font-size:45px;font-weight:bold;color:#ffffff;">$value</span><br>
+                            <span style="font-size:20px;color:#8b949e;">$label</span>
                           </td></tr>
                         </table>
                       </td>''';
@@ -555,8 +596,8 @@ $content
     final bottom = (bottomSection == null || bottomSection.isEmpty)
         ? ''
         : '''
-              <tr bgcolor="#1e293b">
-                <td style="padding:20px;border-top:2px solid #334155;border-bottom-left-radius:16px;border-bottom-right-radius:16px;">
+             <tr bgcolor="#1e293b">
+                <td style="padding:30px;border-top:2px solid #334155;border-bottom-left-radius:16px;border-bottom-right-radius:16px;">
                   $bottomSection
                 </td>
               </tr>''';
@@ -570,17 +611,17 @@ $content
         <bgColor>ff17110d</bgColor>
         <text><![CDATA[
 ${_antiBlink(bId)}
-          <div style="font-family:Arial,sans-serif;width:700px;padding:16px;box-sizing:border-box;background-color:#0d1117;color:#ffffff;">
+          <div style="font-family:Arial,sans-serif;width:1050px;padding:24px;box-sizing:border-box;background-color:#0d1117;color:#ffffff;">
             <table width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #334155;border-collapse:collapse;border-radius:16px;background-color:#0d1117;">
               <tr bgcolor="$headerBg">
-                <td style="padding:20px;border-top-left-radius:16px;border-top-right-radius:16px;">
-                  <span style="color:white;font-size:26px;font-weight:bold;">$emoji $title</span>
+                <td style="padding:30px;border-top-left-radius:16px;border-top-right-radius:16px;">
+                  <span style="color:white;font-size:39px;font-weight:bold;">$emoji $title</span>
                   <br><br>
-                  <span style="color:$subtitleColor;font-size:15px;">$subtitle</span>
+                  <span style="color:$subtitleColor;font-size:22px;">$subtitle</span>
                 </td>
               </tr>
               <tr>
-                <td style="padding:16px;">
+                <td style="padding:24px;">
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       $cardsRow
@@ -609,14 +650,14 @@ ${_antiBlink(bId)}
     final pct = percent.clamp(0, 100).toStringAsFixed(1);
     return '''
                   <tr>
-                    <td style="padding:6px 0;color:#e2e8f0;font-size:14px;" width="35%">$label</td>
-                    <td style="padding:6px 0;" width="50%">
+                    <td style="padding:9px 0;color:#e2e8f0;font-size:21px;" width="35%">$label</td>
+                    <td style="padding:9px 0;" width="50%">
                       <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0d1117;border-radius:6px;"><tr>
-                        <td width="$pct%" style="background-color:$color;height:14px;border-radius:6px;">&nbsp;</td>
+                        <td width="$pct%" style="background-color:$color;height:21px;border-radius:6px;">&nbsp;</td>
                         <td>&nbsp;</td>
                       </tr></table>
                     </td>
-                    <td style="padding:6px 0 6px 10px;color:#ffffff;font-size:14px;font-weight:bold;" width="15%">$pct%</td>
+                    <td style="padding:9px 0 9px 15px;color:#ffffff;font-size:21px;font-weight:bold;" width="15%">$pct%</td>
                   </tr>''';
   }
 

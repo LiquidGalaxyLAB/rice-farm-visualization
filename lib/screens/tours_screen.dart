@@ -57,7 +57,7 @@ class _ToursScreenState extends State<ToursScreen> {
     return NarrationScripts.riceBeltTour.map((data) {
       String? kmlContent;
       if (data['kmlAction'] == 'production') {
-        kmlContent = _kmlBuilder.buildProductionKml();
+        kmlContent = _kmlBuilder.buildProductionTierKml();
       } else if (data['kmlAction'] == 'state') {
         final state = RiceStates.states.firstWhere(
           (s) => s.name == data['title'],
@@ -74,6 +74,9 @@ class _ToursScreenState extends State<ToursScreen> {
         tilt: data['tilt'],
         heading: data['heading'],
         kmlAction: kmlContent,
+        dashboardKey: data['kmlAction'] == 'state'
+            ? data['title'] // state name → production dashboard
+            : 'national', // 'production' steps → national dashboard
       );
     }).toList();
   }
@@ -99,6 +102,9 @@ class _ToursScreenState extends State<ToursScreen> {
         tilt: data['tilt'],
         heading: data['heading'],
         kmlAction: kmlContent,
+        dashboardKey: data['kmlAction'] == 'state'
+            ? 'irrigation:${data['title']}' // per-state irrigation dashboard
+            : 'national',
       );
     }).toList();
   }
@@ -112,8 +118,14 @@ class _ToursScreenState extends State<ToursScreen> {
     };
     return NarrationScripts.seasonalFarmingTour.map((data) {
       final action = data['kmlAction'] as String;
-      final color = stageColors[action] ?? 'ff00cc00';
-      final kmlContent = _kmlBuilder.buildCropCycleKml(data['title'], color);
+      String? kmlContent;
+      if (action == 'overview') {
+        kmlContent = _kmlBuilder
+            .buildProductionTierKml(); // colored production map
+      } else {
+        final color = stageColors[action] ?? 'ff00cc00';
+        kmlContent = _kmlBuilder.buildCropCycleKml(data['title'], color);
+      }
       return TourStep(
         title: data['title'],
         narration: data['narration'],
@@ -123,6 +135,7 @@ class _ToursScreenState extends State<ToursScreen> {
         tilt: data['tilt'],
         heading: data['heading'],
         kmlAction: kmlContent,
+        dashboardKey: action == 'overview' ? 'national' : 'crop:Kharif:$action',
       );
     }).toList();
   }

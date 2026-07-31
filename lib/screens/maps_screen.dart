@@ -19,7 +19,7 @@ class _MapsScreenState extends State<MapsScreen> {
   GoogleMapController? _mapController;
   Timer? _syncTimer;
   bool _isSyncing = true;
-  bool _isOrbiting = false;
+
   CameraPosition _currentPosition = const CameraPosition(
     target: LatLng(22.0, 82.0),
     zoom: 5,
@@ -72,32 +72,6 @@ class _MapsScreenState extends State<MapsScreen> {
     }
   }
 
-  Future<void> _orbitHere() async {
-    if (_isOrbiting) return;
-    setState(() => _isOrbiting = true);
-
-    final lat = _currentPosition.target.latitude;
-    final lng = _currentPosition.target.longitude;
-    final range = 591657550.5 / (1 << _currentPosition.zoom.toInt());
-
-    final sequence = _kmlBuilder.buildOrbitSequence(
-      lat: lat,
-      lng: lng,
-      range: range.clamp(5000, 2000000),
-      tilt: 60,
-      steps: 24,
-    );
-
-    for (final lookAt in sequence) {
-      if (!_isOrbiting) break;
-      if (!widget.lgController.isConnected) break;
-      await widget.lgController.safeQuery(lookAt);
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
-
-    setState(() => _isOrbiting = false);
-  }
-
   Future<void> _flyToIndia() async {
     await _mapController?.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -138,7 +112,6 @@ class _MapsScreenState extends State<MapsScreen> {
           GestureDetector(
             onTap: () {
               _syncTimer?.cancel();
-              _isOrbiting = false;
               Navigator.pop(context);
             },
             child: Container(
@@ -209,16 +182,6 @@ class _MapsScreenState extends State<MapsScreen> {
             'Zoom: ${_currentPosition.zoom.toStringAsFixed(1)}',
             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
           ),
-          const Spacer(),
-          if (_isOrbiting)
-            const SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Color(0xFF42A5F5),
-              ),
-            ),
         ],
       ),
     );
@@ -231,76 +194,31 @@ class _MapsScreenState extends State<MapsScreen> {
         color: AppTheme.bgDark,
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: _isOrbiting ? null : _orbitHere,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF42A5F5).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFF42A5F5).withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.rotate_right,
-                      color: _isOrbiting
-                          ? Colors.grey
-                          : const Color(0xFF42A5F5),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _isOrbiting ? 'Orbiting...' : 'Orbit here',
-                      style: TextStyle(
-                        color: _isOrbiting
-                            ? Colors.grey
-                            : const Color(0xFF42A5F5),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+      child: GestureDetector(
+        onTap: _flyToIndia,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.flight, color: AppTheme.textSecondary, size: 16),
+              SizedBox(width: 6),
+              Text(
+                'Fly to India',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: GestureDetector(
-              onTap: _flyToIndia,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.flight, color: AppTheme.textSecondary, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      'Fly to India',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
