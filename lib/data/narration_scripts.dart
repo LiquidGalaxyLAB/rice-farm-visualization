@@ -180,7 +180,7 @@ class NarrationScripts {
       'range': 5000000.0,
       'tilt': 0.0,
       'heading': 0.0,
-      'kmlAction': 'sowing',
+      'kmlAction': 'overview',
     },
     {
       'title': 'Sowing Season',

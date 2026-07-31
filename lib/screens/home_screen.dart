@@ -13,6 +13,7 @@ import 'crop_cycle_screen.dart';
 import 'irrigation_screen.dart';
 import 'tours_screen.dart';
 import 'about_screen.dart';
+import 'maps_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final SSHController sshController;
@@ -249,6 +250,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         bgColor: AppTheme.purple,
         onTap: () =>
             _navigateTo(ToursScreen(lgController: widget.lgController)),
+      ),
+      _MenuItem(
+        icon: Icons.explore_outlined,
+        title: 'Synced Navigation',
+        subtitle: 'Real-time Google Maps to LG sync',
+        color: AppTheme.blue,
+        bgColor: AppTheme.blue,
+        onTap: () => _navigateTo(MapsScreen(lgController: widget.lgController)),
       ),
       _MenuItem(
         icon: Icons.info_outline,

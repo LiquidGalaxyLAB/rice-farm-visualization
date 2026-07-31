@@ -5,6 +5,7 @@ import '../services/kml_builder_service.dart';
 import '../data/rice_states.dart';
 import '../data/irrigation_data.dart';
 import '../models/state_data.dart';
+import '../data/crop_cycles.dart';
 
 class LGController {
   LGController({
@@ -579,6 +580,22 @@ class LGController {
       description: description,
     );
     await sendKMLToSlave(lastScreen, balloon);
+  }
+
+  /// Looks up a stage's details from CropCycles and shows its dashboard.
+  Future<void> showCropDashboardByStage(String season, String stageName) async {
+    if (!isConnected) return;
+    final cycle = season == 'Kharif' ? CropCycles.kharif : CropCycles.rabi;
+    final stage = cycle.stages.firstWhere(
+      (s) => s.name.toLowerCase() == stageName.toLowerCase(),
+      orElse: () => cycle.stages.first,
+    );
+    await showCropDashboard(
+      season: season,
+      stageName: stage.name,
+      months: stage.months,
+      description: stage.description,
+    );
   }
 
   /// State dashboard — production profile.

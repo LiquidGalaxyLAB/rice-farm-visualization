@@ -3,6 +3,7 @@ import '../models/tour_step.dart';
 import '../controllers/lg_controller.dart';
 import '../services/kml_builder_service.dart';
 import '../services/tts_service.dart';
+import '../data/rice_states.dart';
 
 class TourEngine {
   final LGController lgController;
@@ -38,6 +39,34 @@ class TourEngine {
     _isPaused = false;
   }
 
+  Future<void> _sendStepDashboard(String key) async {
+    try {
+      if (key.startsWith('irrigation:')) {
+        final name = key.substring('irrigation:'.length);
+        final s = RiceStates.states.firstWhere(
+          (s) => s.name == name,
+          orElse: () => RiceStates.states.first,
+        );
+        await lgController.showIrrigationDashboard(s);
+      } else if (key.startsWith('crop:')) {
+        final parts = key.split(':'); // crop:Season:Stage
+        // build a crop dashboard — needs season+stage+months+desc
+        await lgController.showCropDashboardByStage(parts[1], parts[2]);
+      } else if (key == 'national') {
+        await lgController.showNationalDashboard();
+      } else {
+        // plain state name → production dashboard
+        final s = RiceStates.states.firstWhere(
+          (s) => s.name == key,
+          orElse: () => RiceStates.states.first,
+        );
+        await lgController.showStateDashboard(s);
+      }
+    } catch (e) {
+      debugPrint('Step dashboard failed: $e');
+    }
+  }
+
   Future<void> play() async {
     if (_steps.isEmpty) return;
 
@@ -59,12 +88,17 @@ class TourEngine {
 
       try {
         // Clear previous KML
-        // await lgController.safeExecute('> /var/www/html/kmls.txt');
-        // await Future.delayed(const Duration(milliseconds: 300));
+        await lgController.clearKmls(keepLogos: true);
+        await Future.delayed(const Duration(milliseconds: 400));
 
         // Send KML if this step has one
         if (step.kmlAction != null) {
           await lgController.sendKmlToMaster(step.kmlAction!);
+        }
+
+        // Send matching dashboard for this step
+        if (step.dashboardKey != null) {
+          await _sendStepDashboard(step.dashboardKey!);
         }
 
         // Fly to location
