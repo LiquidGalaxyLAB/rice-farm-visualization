@@ -6,6 +6,7 @@ import '../data/rice_states.dart';
 import '../data/irrigation_data.dart';
 import '../models/state_data.dart';
 import '../data/crop_cycles.dart';
+import '../data/narration_scripts.dart';
 
 class LGController {
   LGController({
@@ -495,6 +496,42 @@ class LGController {
   /// no ScreenOverlay sizing, no aspect-ratio stretching.
   /// Sends a pre-built dashboard balloon KML to the right slave screen.
   int _stateYield(StateData s) => s.yield.toInt();
+
+  String? _irrigationNarrationFor(StateData s) {
+    final irr = IrrigationData.stateWise[s.name];
+    if (irr == null) return null;
+    return '${s.name} receives ${s.rainfall.toInt()} mm of annual rainfall, '
+        'with ${s.irrigatedPercent}% of rice area irrigated. '
+        'Main sources: tubewells ${irr['tubewell']}%, canals ${irr['canal']}%.';
+  }
+
+  String? _narrationFor(String stateName) {
+    switch (stateName) {
+      case 'West Bengal':
+        return NarrationScripts.westBengal;
+      case 'Uttar Pradesh':
+        return NarrationScripts.uttarPradesh;
+      case 'Punjab':
+        return NarrationScripts.punjab;
+      case 'Andhra Pradesh':
+        return NarrationScripts.andhraPradesh;
+      case 'Tamil Nadu':
+        return NarrationScripts.tamilNadu;
+      case 'Odisha':
+        return NarrationScripts.odisha;
+      case 'Bihar':
+        return NarrationScripts.bihar;
+      case 'Chhattisgarh':
+        return NarrationScripts.chhattisgarh;
+      case 'Assam':
+        return NarrationScripts.assam;
+      case 'Jharkhand':
+        return NarrationScripts.jharkhand;
+      default:
+        return null;
+    }
+  }
+
   Future<void> showDashboardBalloon(String balloonKml) async {
     if (!isConnected) return;
     await sendKMLToSlave(lastScreen, balloonKml);
@@ -510,6 +547,7 @@ class LGController {
       totalProduction: RiceStates.totalProduction,
       totalArea: RiceStates.totalArea,
       avgYield: RiceStates.averageYield,
+      narration: NarrationScripts.indiaOverview,
     );
 
     String balloon = national;
@@ -545,6 +583,7 @@ class LGController {
             other: (irr['other'] as num).toDouble(),
             lat: s.latitude,
             lon: s.longitude,
+            narration: _irrigationNarrationFor(s),
           );
         } else {
           balloon = kml.buildStateDashboard(
@@ -556,6 +595,7 @@ class LGController {
             irrigatedPercent: s.irrigatedPercent,
             lat: s.latitude,
             lon: s.longitude,
+            narration: _narrationFor(s.name),
           );
         }
       }
@@ -611,6 +651,7 @@ class LGController {
       irrigatedPercent: s.irrigatedPercent,
       lat: s.latitude,
       lon: s.longitude,
+      narration: _narrationFor(s.name),
     );
     await sendKMLToSlave(lastScreen, balloon);
   }
@@ -629,6 +670,7 @@ class LGController {
       other: (irr['other'] as num).toDouble(),
       lat: s.latitude,
       lon: s.longitude,
+      narration: _irrigationNarrationFor(s),
     );
     await sendKMLToSlave(lastScreen, balloon);
   }
@@ -641,6 +683,7 @@ class LGController {
       totalProduction: RiceStates.totalProduction,
       totalArea: RiceStates.totalArea,
       avgYield: RiceStates.averageYield,
+      narration: NarrationScripts.indiaOverview,
     );
     await sendKMLToSlave(lastScreen, balloon);
   }

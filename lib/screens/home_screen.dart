@@ -259,6 +259,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         bgColor: AppTheme.blue,
         onTap: () => _navigateTo(MapsScreen(lgController: widget.lgController)),
       ),
+
       _MenuItem(
         icon: Icons.info_outline,
         title: 'About Project',

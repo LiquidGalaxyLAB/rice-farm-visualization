@@ -21,6 +21,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
   final TtsService _tts = TtsService();
   String _kmlError = '';
   String? _orbitingState;
+  bool _voiceEnabled = false;
 
   @override
   void initState() {
@@ -106,7 +107,7 @@ class _RegionsScreenState extends State<RegionsScreen> {
       if (!mounted) return;
       final narration = _getNarration(state.name);
       if (narration != null) {
-        await _tts.speak(narration);
+        if (_voiceEnabled) await _tts.speak(narration);
         if (!mounted) return;
       }
       final safeName = state.name.toLowerCase().replaceAll(' ', '_');
@@ -173,6 +174,11 @@ class _RegionsScreenState extends State<RegionsScreen> {
     }
   }
 
+  void _toggleVoice() {
+    setState(() => _voiceEnabled = !_voiceEnabled);
+    if (!_voiceEnabled) _tts.stop();
+  }
+
   void _showError(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -225,6 +231,45 @@ class _RegionsScreenState extends State<RegionsScreen> {
                 color: AppTheme.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _toggleVoice,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: (_voiceEnabled ? const Color(0xFF66BB6A) : Colors.grey)
+                    .withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: (_voiceEnabled ? const Color(0xFF66BB6A) : Colors.grey)
+                      .withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _voiceEnabled ? Icons.volume_up : Icons.volume_off,
+                    color: _voiceEnabled
+                        ? const Color(0xFF66BB6A)
+                        : Colors.grey,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Voice',
+                    style: TextStyle(
+                      color: _voiceEnabled
+                          ? const Color(0xFF66BB6A)
+                          : Colors.grey,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
