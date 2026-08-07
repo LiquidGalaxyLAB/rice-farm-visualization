@@ -588,6 +588,7 @@ $content
     required String subtitle,
     required String cardsRow,
     String? bottomSection,
+    String? narration,
     String headerBg = '#0F766E',
     String subtitleColor = '#ccfbf1',
     double lat = 22.0,
@@ -597,8 +598,7 @@ $content
         ? ''
         : '''
              <tr bgcolor="#1e293b">
-                <td style="padding:30px;border-top:2px solid #334155;border-bottom-left-radius:16px;border-bottom-right-radius:16px;">
-                  $bottomSection
+                <td style="padding:30px;border-top:2px solid #334155;border-bottom-left-radius:16px;border-bottom-right-radius:16px;"> $bottomSection
                 </td>
               </tr>''';
 
@@ -629,7 +629,13 @@ ${_antiBlink(bId)}
                   </table>
                 </td>
               </tr>
-              $bottom
+             $bottom
+              ${(narration == null || narration.isEmpty) ? '' : '''
+              <tr bgcolor="#0d1117">
+                <td style="padding:16px 20px;border-top:1px solid #30363d;border-bottom-left-radius:16px;border-bottom-right-radius:16px;">
+                  <span style="font-size:22px;color:#94a3b8;line-height:1.6;font-style:italic;">&#128172; $narration</span>
+                </td>
+              </tr>'''}
             </table>
           </div>
         ]]></text>
@@ -673,6 +679,7 @@ ${_antiBlink(bId)}
     required double irrigatedPercent,
     required double lat,
     required double lon,
+    String? narration,
   }) {
     final cards =
         _statCard('${production.toStringAsFixed(1)}M', 'Tonnes', '#22c55e') +
@@ -694,6 +701,7 @@ ${_antiBlink(bId)}
       subtitle: 'Rice Production Profile',
       cardsRow: cards,
       bottomSection: bottom,
+      narration: narration,
       lat: lat,
       lon: lon,
     );
@@ -704,6 +712,7 @@ ${_antiBlink(bId)}
     required double totalProduction,
     required double totalArea,
     required double avgYield,
+    String? narration,
   }) {
     final cards =
         _statCard(
@@ -725,6 +734,7 @@ ${_antiBlink(bId)}
       title: 'India Rice Production',
       subtitle: 'National Overview • Top 10 States',
       cardsRow: cards,
+      narration: narration,
     );
   }
 
@@ -734,6 +744,7 @@ ${_antiBlink(bId)}
     required String stageName,
     required String months,
     required String description,
+    String? narration,
   }) {
     final cards =
         _statCard(season, 'Season', '#22c55e') +
@@ -752,6 +763,7 @@ ${_antiBlink(bId)}
       subtitle: '$season Season • $months',
       cardsRow: cards,
       bottomSection: bottom,
+      narration: narration,
       headerBg: '#166534',
       subtitleColor: '#bbf7d0',
     );
@@ -766,6 +778,7 @@ ${_antiBlink(bId)}
     required double other,
     required double lat,
     required double lon,
+    String? narration,
   }) {
     final cards =
         _statCard('${tubewell.toStringAsFixed(0)}%', 'Tubewell', '#3b82f6') +
@@ -790,6 +803,7 @@ ${_antiBlink(bId)}
       subtitle: 'Irrigation Source Breakdown',
       cardsRow: cards,
       bottomSection: bottom,
+      narration: narration,
       headerBg: '#0e7490',
       subtitleColor: '#cffafe',
       lat: lat,

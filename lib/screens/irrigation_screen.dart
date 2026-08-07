@@ -6,6 +6,7 @@ import '../data/rice_states.dart';
 import '../data/irrigation_data.dart';
 import '../data/narration_scripts.dart';
 import '../theme/app_theme.dart';
+import '../models/state_data.dart';
 
 class IrrigationScreen extends StatefulWidget {
   final LGController lgController;
@@ -20,6 +21,8 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
   bool _isLoading = false;
   String? _activeView;
   String _kmlError = '';
+  bool _voiceEnabled = false;
+  String? _orbitingState;
 
   @override
   void initState() {
@@ -78,7 +81,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
       if (!mounted) return;
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;
-      await _tts.speak(NarrationScripts.irrigationOverview);
+      if (_voiceEnabled) await _tts.speak(NarrationScripts.irrigationOverview);
       if (!mounted) return;
       await widget.lgController.showNationalDashboard();
       if (!mounted) return;
@@ -147,7 +150,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
       if (!mounted) return;
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;
-      if (irrData != null) {
+      if (irrData != null && _voiceEnabled) {
         await _tts.speak(
           '${state.name} receives ${state.rainfall.toInt()} millimeters of annual rainfall. '
           '${state.irrigatedPercent} percent of rice area is irrigated. '
@@ -167,8 +170,37 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
     }
   }
 
+  Future<void> _orbitState(StateData state) async {
+    if (_orbitingState == state.name) {
+      await widget.lgController.stopOrbit();
+      if (mounted) setState(() => _orbitingState = null);
+      return;
+    }
+    if (_orbitingState != null) return;
+    setState(() => _orbitingState = state.name);
+    try {
+      final orbitKml = _kmlBuilder.buildOrbitTourKml(
+        lat: state.latitude,
+        lng: state.longitude,
+        range: 500000,
+        tilt: 60,
+      );
+      await widget.lgController.startOrbit(orbitKml);
+      await Future.delayed(const Duration(seconds: 24));
+    } finally {
+      if (mounted && _orbitingState == state.name) {
+        setState(() => _orbitingState = null);
+      }
+    }
+  }
+
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  void _toggleVoice() {
+    setState(() => _voiceEnabled = !_voiceEnabled);
+    if (!_voiceEnabled) _tts.stop();
   }
 
   @override
@@ -250,6 +282,46 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
                 color: AppTheme.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _toggleVoice,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: (_voiceEnabled ? const Color(0xFF42A5F5) : Colors.grey)
+                    .withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: (_voiceEnabled ? const Color(0xFF42A5F5) : Colors.grey)
+                      .withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _voiceEnabled ? Icons.volume_up : Icons.volume_off,
+                    color: _voiceEnabled
+                        ? const Color(0xFF42A5F5)
+                        : Colors.grey,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Voice',
+                    style: TextStyle(
+                      color: _voiceEnabled
+                          ? const Color(0xFF42A5F5)
+                          : Colors.grey,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -363,35 +435,33 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
     return Column(
       children: states.map((state) {
         final isActive = _activeView == state.name;
-        return GestureDetector(
-          onTap: () => _flyToStateIrrigation(state.name),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isActive ? AppTheme.blue.withOpacity(0.1) : AppTheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
               color: isActive
-                  ? AppTheme.blue.withOpacity(0.1)
-                  : AppTheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isActive
-                    ? AppTheme.blue.withOpacity(0.3)
-                    : Colors.grey.shade200,
-              ),
+                  ? AppTheme.blue.withOpacity(0.3)
+                  : Colors.grey.shade200,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    state.name,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  state.name,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Container(
+              ),
+              GestureDetector(
+                onTap: () => _flyToStateIrrigation(state.name),
+                child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
@@ -399,40 +469,71 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
                   decoration: BoxDecoration(
                     color: AppTheme.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.blue.withOpacity(0.3)),
                   ),
-                  child: Text(
-                    '${state.rainfall.toInt()} mm',
-                    style: const TextStyle(
-                      color: AppTheme.blue,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '${state.irrigatedPercent}%',
-                    style: const TextStyle(
-                      color: AppTheme.green,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.send, color: AppTheme.blue, size: 14),
+                      SizedBox(width: 5),
+                      Text(
+                        'Fly to',
+                        style: TextStyle(
+                          color: AppTheme.blue,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              _buildOrbitPill(state),
+            ],
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildOrbitPill(StateData state) {
+    final bool isActive = _orbitingState == state.name;
+    final bool isDisabled = _orbitingState != null && !isActive;
+    final Color base = isActive
+        ? Colors.redAccent
+        : isDisabled
+        ? Colors.grey
+        : const Color(0xFF42A5F5);
+    return GestureDetector(
+      onTap: isDisabled ? null : () => _orbitState(state),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: base.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: base.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? Icons.stop : Icons.threesixty,
+              color: base,
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isActive ? 'Stop' : 'Orbit',
+              style: TextStyle(
+                color: base,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

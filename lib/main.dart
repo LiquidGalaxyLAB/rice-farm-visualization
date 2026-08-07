@@ -8,10 +8,11 @@ import 'controllers/lg_controller.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   debugPrint(
-    '=== RICE FARM BUILD v6: lg1 + absolute-3D + compound-SSH + connect-purge ===',
+    '=== RICE FARM BUILD v9: voice toggle + irrigation orbit + dashboard narration + onboarding ===',
   );
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -53,13 +54,67 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'LG Controller',
       theme: AppTheme.theme,
-      home: SplashScreen(
-        nextScreen: HomeScreen(
-          sshController: sshController,
-          settingsController: settingsController,
-          lgController: lgController,
-        ),
+      home: _StartupGate(
+        sshController: sshController,
+        settingsController: settingsController,
+        lgController: lgController,
       ),
     );
+  }
+}
+
+class _StartupGate extends StatefulWidget {
+  final SSHController sshController;
+  final SettingsController settingsController;
+  final LGController lgController;
+
+  const _StartupGate({
+    required this.sshController,
+    required this.settingsController,
+    required this.lgController,
+  });
+
+  @override
+  State<_StartupGate> createState() => _StartupGateState();
+}
+
+class _StartupGateState extends State<_StartupGate> {
+  bool? _seenOnboarding;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    // Always show onboarding on every launch (demo mode)
+    setState(() => _seenOnboarding = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget home = SplashScreen(
+      nextScreen: HomeScreen(
+        sshController: widget.sshController,
+        settingsController: widget.settingsController,
+        lgController: widget.lgController,
+      ),
+    );
+
+    if (_seenOnboarding == null) {
+      return const Scaffold(
+        backgroundColor: AppTheme.bgLight,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_seenOnboarding == false) {
+      return OnboardingScreen(
+        onDone: () => setState(() => _seenOnboarding = true),
+      );
+    }
+
+    return home;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'onboarding_screen.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -29,6 +30,8 @@ class AboutScreen extends StatelessWidget {
                       _buildDataSources(),
                       const SizedBox(height: 16),
                       _buildTechStack(),
+                      const SizedBox(height: 16),
+                      _buildReplayTourButton(context),
                       const SizedBox(height: 24),
                       _buildFooter(),
                     ],
@@ -334,6 +337,42 @@ class AboutScreen extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildReplayTourButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              OnboardingScreen(onDone: () => Navigator.pop(context)),
+        ),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.purple.withOpacity(0.3)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.replay, color: AppTheme.purple, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Replay App Tour',
+              style: TextStyle(
+                color: AppTheme.purple,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
