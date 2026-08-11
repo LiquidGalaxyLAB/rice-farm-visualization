@@ -11,6 +11,8 @@
 ## Project Goals
 
 Build a Flutter controller application for the Liquid Galaxy multi-screen rig that visualizes India's rice agriculture on Google Earth. The app turns rice production statistics, seasonal crop cycles, irrigation and rainfall data, and guided narrated tours into an immersive multi-screen experience, fully controllable from a phone over SSH.
+<img width="1919" height="949" alt="image (1)" src="https://github.com/user-attachments/assets/0b41806f-19e0-43c0-802f-a2425165aafc" />
+
 
 ## What I Did
 
@@ -32,7 +34,7 @@ The application is complete and working on the Liquid Galaxy rig. All features â
 ## What's Left to Do
 
 - Final validation on the Liquid Galaxy HQ rig.
-- Possible future work: additional 3D model layers and expanded historical/time-series data.
+
 
 ## Merged Work
 
