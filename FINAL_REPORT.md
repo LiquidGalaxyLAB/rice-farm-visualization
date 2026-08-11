@@ -18,7 +18,7 @@ Build a Flutter controller application for the Liquid Galaxy multi-screen rig th
 
 - **Colored 3D production visualization** — extruded polygon KMLs for all Indian states, color-scaled by rice output, rendered across every screen of the rig.
 <div align="center">
-  <img width="450" src="https://github.com/user-attachments/assets/341ce21b-598a-471a-b0af-c7ff5dc287e7" />
+  <img width="800" src="https://github.com/user-attachments/assets/341ce21b-598a-471a-b0af-c7ff5dc287e7" />
 </div>
 
 - **Major Rice Regions** — fly-to any state with TTS narration, a full 360° orbit camera, and a production-tier color scale (green → blue → orange → red).
