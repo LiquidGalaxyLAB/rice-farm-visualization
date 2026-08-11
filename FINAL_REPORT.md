@@ -43,6 +43,8 @@ Build a Flutter controller application for the Liquid Galaxy multi-screen rig th
 <div align="center">
   <img width="800" src="https://github.com/user-attachments/assets/0562dcbd-6214-4f94-a864-2db0a7dfda4a" />
 </div>
+
+
 - **Side-screen dashboards** — HTML balloon dashboards with live statistics and narration text, plus a logo/branding overlay on the leftmost screen.
 - **KML self-diagnostic** — a built-in on-screen verifier that checks delivery end to end (write → serve → slave-fetch) and reports the exact failure, enabling remote debugging without rig access.
 - **User controls** — voice on/off toggle, connect/disconnect handling, instant navigation, and a skippable first-time onboarding tour.
