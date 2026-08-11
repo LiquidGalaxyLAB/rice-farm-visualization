@@ -17,11 +17,23 @@ Build a Flutter controller application for the Liquid Galaxy multi-screen rig th
 ## What I Did
 
 - **Colored 3D production visualization** — extruded polygon KMLs for all Indian states, color-scaled by rice output, rendered across every screen of the rig.
+<img width="1250" height="983" alt="image" src="https://github.com/user-attachments/assets/341ce21b-598a-471a-b0af-c7ff5dc287e7" />
+
 - **Major Rice Regions** — fly-to any state with TTS narration, a full 360° orbit camera, and a production-tier color scale (green → blue → orange → red).
+<img width="1250" height="448" alt="image" src="https://github.com/user-attachments/assets/aef93583-c4c1-41de-8a09-6d67bf170729" />
+
 - **Irrigation & Rainfall** — per-state rainfall polygons, irrigation-source markers, orbit, and per-state water-source dashboards.
+<img width="1333" height="960" alt="image" src="https://github.com/user-attachments/assets/bc58c018-80b3-484e-a57d-2bb528c7f82a" />
+
 - **Seasonal Crop Cycle** — Kharif/Rabi stage visualization with auto-play narration.
+<img width="1253" height="791" alt="image" src="https://github.com/user-attachments/assets/1e9ebd93-a7f2-42a1-8215-cf8543b44d1b" />
+
 - **Three guided tours** — automated storytelling with TTS narration and matching data dashboards per step.
+<img width="1632" height="786" alt="image" src="https://github.com/user-attachments/assets/cc7ec591-e6df-4da0-9ab7-f6ff4cfc84da" />
+
 - **Synced Navigation** — real-time Google Maps pan/zoom drives the Liquid Galaxy camera live.
+<img width="1053" height="764" alt="image" src="https://github.com/user-attachments/assets/0562dcbd-6214-4f94-a864-2db0a7dfda4a" />
+
 - **Side-screen dashboards** — HTML balloon dashboards with live statistics and narration text, plus a logo/branding overlay on the leftmost screen.
 - **KML self-diagnostic** — a built-in on-screen verifier that checks delivery end to end (write → serve → slave-fetch) and reports the exact failure, enabling remote debugging without rig access.
 - **User controls** — voice on/off toggle, connect/disconnect handling, instant navigation, and a skippable first-time onboarding tour.
