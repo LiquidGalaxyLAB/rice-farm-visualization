@@ -27,17 +27,22 @@ Build a Flutter controller application for the Liquid Galaxy multi-screen rig th
 </div>
 
 - **Irrigation & Rainfall** — per-state rainfall polygons, irrigation-source markers, orbit, and per-state water-source dashboards.
-<img width="1333" height="960" alt="image" src="https://github.com/user-attachments/assets/bc58c018-80b3-484e-a57d-2bb528c7f82a" />
+<div align="center">
+  <img width="800" src="https://github.com/user-attachments/assets/bc58c018-80b3-484e-a57d-2bb528c7f82a" />
+</div>
 
 - **Seasonal Crop Cycle** — Kharif/Rabi stage visualization with auto-play narration.
-<img width="1253" height="791" alt="image" src="https://github.com/user-attachments/assets/1e9ebd93-a7f2-42a1-8215-cf8543b44d1b" />
+<div align="center">
+  <img width="800" src="https://github.com/user-attachments/assets/1e9ebd93-a7f2-42a1-8215-cf8543b44d1b" />
+</div>
 
-- **Three guided tours** — automated storytelling with TTS narration and matching data dashboards per step.
-<img width="1632" height="786" alt="image" src="https://github.com/user-attachments/assets/cc7ec591-e6df-4da0-9ab7-f6ff4cfc84da" />
-
+- **Three guided tours** — automated storytelling with TTS narration and matching data dashboards per step.<div align="center">
+  <img width="800" src="https://github.com/user-attachments/assets/cc7ec591-e6df-4da0-9ab7-f6ff4cfc84da" />
+</div>
 - **Synced Navigation** — real-time Google Maps pan/zoom drives the Liquid Galaxy camera live.
-<img width="1053" height="764" alt="image" src="https://github.com/user-attachments/assets/0562dcbd-6214-4f94-a864-2db0a7dfda4a" />
-
+<div align="center">
+  <img width="800" src="https://github.com/user-attachments/assets/0562dcbd-6214-4f94-a864-2db0a7dfda4a" />
+</div>
 - **Side-screen dashboards** — HTML balloon dashboards with live statistics and narration text, plus a logo/branding overlay on the leftmost screen.
 - **KML self-diagnostic** — a built-in on-screen verifier that checks delivery end to end (write → serve → slave-fetch) and reports the exact failure, enabling remote debugging without rig access.
 - **User controls** — voice on/off toggle, connect/disconnect handling, instant navigation, and a skippable first-time onboarding tour.
