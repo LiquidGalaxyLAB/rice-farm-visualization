@@ -22,7 +22,9 @@ Build a Flutter controller application for the Liquid Galaxy multi-screen rig th
 </div>
 
 - **Major Rice Regions** — fly-to any state with TTS narration, a full 360° orbit camera, and a production-tier color scale (green → blue → orange → red).
-<img width="1250" height="448" alt="image" src="https://github.com/user-attachments/assets/aef93583-c4c1-41de-8a09-6d67bf170729" />
+<div align="center">
+  <img width="800" src="https://github.com/user-attachments/assets/aef93583-c4c1-41de-8a09-6d67bf170729" />
+</div>
 
 - **Irrigation & Rainfall** — per-state rainfall polygons, irrigation-source markers, orbit, and per-state water-source dashboards.
 <img width="1333" height="960" alt="image" src="https://github.com/user-attachments/assets/bc58c018-80b3-484e-a57d-2bb528c7f82a" />
