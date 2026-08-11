@@ -621,7 +621,7 @@ ${_antiBlink(bId)}
                 </td>
               </tr>
               <tr>
-                <td style="padding:24px;">
+               <td style="padding:24px;">
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       $cardsRow
@@ -633,7 +633,7 @@ ${_antiBlink(bId)}
               ${(narration == null || narration.isEmpty) ? '' : '''
               <tr bgcolor="#0d1117">
                 <td style="padding:16px 20px;border-top:1px solid #30363d;border-bottom-left-radius:16px;border-bottom-right-radius:16px;">
-                  <span style="font-size:22px;color:#94a3b8;line-height:1.6;font-style:italic;">&#128172; $narration</span>
+                 <span style="font-size:22px;color:#94a3b8;line-height:1.6;font-style:italic;">&#128172; $narration</span>
                 </td>
               </tr>'''}
             </table>
@@ -656,7 +656,7 @@ ${_antiBlink(bId)}
     final pct = percent.clamp(0, 100).toStringAsFixed(1);
     return '''
                   <tr>
-                    <td style="padding:9px 0;color:#e2e8f0;font-size:21px;" width="35%">$label</td>
+                   <td style="padding:9px 0;color:#e2e8f0;font-size:21px;" width="35%">$label</td>
                     <td style="padding:9px 0;" width="50%">
                       <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0d1117;border-radius:6px;"><tr>
                         <td width="$pct%" style="background-color:$color;height:21px;border-radius:6px;">&nbsp;</td>

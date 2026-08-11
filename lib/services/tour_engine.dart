@@ -112,14 +112,11 @@ class TourEngine {
           ),
         );
 
-        // Wait for camera to arrive
-        await Future.delayed(const Duration(seconds: 1));
-
-        await Future.delayed(const Duration(seconds: 5));
+        // Brief wait for the camera to arrive, then narrate
+        await Future.delayed(const Duration(milliseconds: 1000));
 
         // Speak narration and wait for it to finish
         await _speakAndWait(step.narration);
-
         // Small pause between steps
         await Future.delayed(const Duration(seconds: 1));
       } catch (e) {
