@@ -11,39 +11,62 @@
 ## Project Goals
 
 Build a Flutter controller application for the Liquid Galaxy multi-screen rig that visualizes India's rice agriculture on Google Earth. The app turns rice production statistics, seasonal crop cycles, irrigation and rainfall data, and guided narrated tours into an immersive multi-screen experience, fully controllable from a phone over SSH.
-<img width="1917" height="973" alt="image" src="https://github.com/user-attachments/assets/120d3365-fa41-4a4b-bbc1-952a777b27fd" />
 
+<div align="center">
+  <img width="900" src="https://github.com/user-attachments/assets/120d3365-fa41-4a4b-bbc1-952a777b27fd" />
+</div>
 
 ## What I Did
 
-- **Colored 3D production visualization** — extruded polygon KMLs for all Indian states, color-scaled by rice output, rendered across every screen of the rig.
+### 🌾 Colored 3D Production Visualization
+
+Extruded polygon KMLs for all Indian states, color-scaled by rice output, rendered across every screen of the rig.
+
 <div align="center">
   <img width="800" src="https://github.com/user-attachments/assets/341ce21b-598a-471a-b0af-c7ff5dc287e7" />
 </div>
 
-- **Major Rice Regions** — fly-to any state with TTS narration, a full 360° orbit camera, and a production-tier color scale (green → blue → orange → red).
+### 📍 Major Rice Regions
+
+Fly-to any state with TTS narration, a full 360° orbit camera, and a production-tier color scale (green → blue → orange → red).
+
 <div align="center">
   <img width="800" src="https://github.com/user-attachments/assets/aef93583-c4c1-41de-8a09-6d67bf170729" />
 </div>
 
-- **Irrigation & Rainfall** — per-state rainfall polygons, irrigation-source markers, orbit, and per-state water-source dashboards.
+### 💧 Irrigation & Rainfall
+
+Per-state rainfall polygons, irrigation-source markers, orbit, and per-state water-source dashboards.
+
 <div align="center">
   <img width="800" src="https://github.com/user-attachments/assets/bc58c018-80b3-484e-a57d-2bb528c7f82a" />
 </div>
 
-- **Seasonal Crop Cycle** — Kharif/Rabi stage visualization with auto-play narration.
+### 🌱 Seasonal Crop Cycle
+
+Kharif/Rabi stage visualization with auto-play narration.
+
 <div align="center">
   <img width="800" src="https://github.com/user-attachments/assets/1e9ebd93-a7f2-42a1-8215-cf8543b44d1b" />
 </div>
 
-- **Three guided tours** — automated storytelling with TTS narration and matching data dashboards per step.<div align="center">
+### 🎬 Three Guided Tours
+
+Automated storytelling with TTS narration and matching data dashboards per step.
+
+<div align="center">
   <img width="800" src="https://github.com/user-attachments/assets/cc7ec591-e6df-4da0-9ab7-f6ff4cfc84da" />
 </div>
-- **Synced Navigation** — real-time Google Maps pan/zoom drives the Liquid Galaxy camera live.
+
+### 🗺️ Synced Navigation
+
+Real-time Google Maps pan/zoom drives the Liquid Galaxy camera live.
+
 <div align="center">
   <img width="800" src="https://github.com/user-attachments/assets/0562dcbd-6214-4f94-a864-2db0a7dfda4a" />
 </div>
 
+### Additional Features
 
 - **Side-screen dashboards** — HTML balloon dashboards with live statistics and narration text, plus a logo/branding overlay on the leftmost screen.
 - **KML self-diagnostic** — a built-in on-screen verifier that checks delivery end to end (write → serve → slave-fetch) and reports the exact failure, enabling remote debugging without rig access.
@@ -57,7 +80,6 @@ The application is complete and working on the Liquid Galaxy rig. All features �
 ## What's Left to Do
 
 - Final validation on the Liquid Galaxy HQ rig.
-
 
 ## Merged Work
 
@@ -81,7 +103,3 @@ The final GSoC commit is the last commit merged in PR #12.
 ## Challenges & Learnings
 
 The most significant challenge was a colored-KML rendering issue: the visualizations worked perfectly on my local 3-screen rig but failed on the physical test rig. Because I couldn't directly access the failing environment, I studied the Liquid Galaxy core source code and several past GSoC projects to understand the rig's KML sync mechanism, then built an on-screen self-diagnostic that verified each stage of delivery and reported the exact failure remotely. This revealed that the KML serving path and hostname resolution behaved differently on the physical rig. Resolving it taught me disciplined debugging of distributed systems I could not directly observe, and the value of building instrumentation instead of guessing — an approach that turned a multi-week blocker into a solved problem.
-
----
-
-*This report is submitted as the Work Product for Google Summer of Code 2026 with Liquid Galaxy Lab.*
