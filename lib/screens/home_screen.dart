@@ -70,7 +70,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         password: password,
       );
       if (!mounted) return;
-      setState(() => _isConnected = success);
+      setState(() {
+        _isConnected = success;
+        _hasSavedSettings = host.isNotEmpty && password.isNotEmpty;
+      });
       if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -105,6 +108,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
     if (!mounted) return;
+    // Re-check saved settings after returning (they may have just been saved)
+    final saved = await widget.settingsController.loadSettings();
+    final host = (saved['host'] ?? '') as String;
+    final password = (saved['password'] ?? '') as String;
+    if (mounted) {
+      setState(
+        () => _hasSavedSettings = host.isNotEmpty && password.isNotEmpty,
+      );
+    }
     if (result == true) {
       // Settings saved → connect with new values
       _connectToLG();
