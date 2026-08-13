@@ -230,6 +230,7 @@ class AboutScreen extends StatelessWidget {
       child: Column(
         children: [
           _buildTeamRow('Contributor', 'Vinayak Dhaka'),
+          _buildTeamRow('Logo Designer', 'Paula Torner'),
           _buildTeamRow('Mentor 1', 'Vedant Singh'),
           _buildTeamRow('Mentor 2', 'Dev Gadani'),
           _buildTeamRow('Organization', 'Liquid Galaxy Lab'),

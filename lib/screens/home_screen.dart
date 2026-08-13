@@ -14,6 +14,7 @@ import 'irrigation_screen.dart';
 import 'tours_screen.dart';
 import 'about_screen.dart';
 import 'maps_screen.dart';
+import 'help_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final SSHController sshController;
@@ -35,29 +36,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isConnected = false;
   bool _isLoading = false;
 
+  bool _hasSavedSettings = false;
+
   @override
   void initState() {
     super.initState();
-    if (widget.settingsController.lgHost.isNotEmpty &&
-        widget.settingsController.lgPassword.isNotEmpty) {
-      _connectToLG();
-    }
+    _checkSavedAndConnect();
+  }
+
+  Future<void> _checkSavedAndConnect() async {
+    final saved = await widget.settingsController.loadSettings();
+    final host = (saved['host'] ?? '') as String;
+    final password = (saved['password'] ?? '') as String;
+    final hasSaved = host.isNotEmpty && password.isNotEmpty;
+    if (mounted) setState(() => _hasSavedSettings = hasSaved);
+    if (hasSaved) _connectToLG();
   }
 
   Future<void> _connectToLG() async {
     setState(() => _isLoading = true);
     try {
+      // Read the actual saved values from prefs (loadSettings returns a map)
+      final saved = await widget.settingsController.loadSettings();
+      final host = (saved['host'] ?? '') as String;
+      final port = (saved['port'] ?? 22) as int;
+      final username = (saved['username'] ?? '') as String;
+      final password = (saved['password'] ?? '') as String;
+
       final success = await widget.lgController.connect(
-        host: widget.settingsController.lgHost,
-        port: widget.settingsController.lgPort,
-        username: widget.settingsController.lgUsername,
-        password: widget.settingsController.lgPassword,
+        host: host,
+        port: port,
+        username: username,
+        password: password,
       );
+      if (!mounted) return;
       setState(() => _isConnected = success);
-    } catch (_) {
-      setState(() => _isConnected = false);
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection failed. Check settings.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isConnected = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Connection error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -71,7 +104,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
-    if (result == true) _connectToLG();
+    if (!mounted) return;
+    if (result == true) {
+      // Settings saved → connect with new values
+      _connectToLG();
+    } else {
+      // Returned without saving (e.g. disconnected) → sync the actual state
+      setState(() => _isConnected = widget.sshController.isConnected);
+    }
   }
 
   void _navigateTo(Widget screen) {
@@ -155,7 +195,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildConnectionStatus() {
     return GestureDetector(
-      onTap: _isConnected ? null : _connectToLG,
+      onTap: _isConnected
+          ? null
+          : (_hasSavedSettings ? _connectToLG : _navigateToSettings),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
@@ -191,7 +233,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ? 'Connecting...'
                   : _isConnected
                   ? 'Connected to Liquid Galaxy'
-                  : 'Tap to connect',
+                  : (_hasSavedSettings ? 'Tap to connect' : 'Tap to configure'),
               style: TextStyle(
                 color: _isConnected ? AppTheme.green : AppTheme.red,
                 fontSize: 16,
@@ -267,6 +309,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: AppTheme.teal,
         bgColor: AppTheme.teal,
         onTap: () => _navigateTo(const AboutScreen()),
+      ),
+      _MenuItem(
+        icon: Icons.help_outline,
+        title: 'Help & Guide',
+        subtitle: 'Learn how to use each feature',
+        color: AppTheme.purple,
+        bgColor: AppTheme.purple,
+        onTap: () => _navigateTo(const HelpScreen()),
       ),
     ];
 
