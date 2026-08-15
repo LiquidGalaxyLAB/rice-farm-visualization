@@ -5,6 +5,7 @@
 **Mentors:** Vedant Singh, Dev Gandani  
 **Program:** Google Summer of Code 2026  
 **Repository:** https://github.com/LiquidGalaxyLAB/rice-farm-visualization
+**Go Store:** https://store.liquidgalaxy.eu/app.html?name=Rice%20Farm%20Agriculture
 
 ---
 
