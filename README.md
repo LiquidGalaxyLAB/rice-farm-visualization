@@ -97,9 +97,6 @@ flutter run
 5. Side screens are updated by writing to `slave_X.kml` files
 6. TTS narration plays on the phone while visuals render on LG
 
-## Screenshots
-
-*Screenshots of the app running on a 3-screen LG rig*
 
 ## GSoC 2026
 
