@@ -78,13 +78,6 @@ cd rice-farm-visualization
 flutter pub get
 ```
 
-3. Add your Google Maps API key to `android/app/src/main/AndroidManifest.xml`:
-```xml
-<meta-data
-    android:name="com.google.android.geo.API_KEY"
-    android:value="YOUR_API_KEY"/>
-```
-
 4. Run the app:
 ```bash
 flutter run
