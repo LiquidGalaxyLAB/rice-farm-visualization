@@ -78,9 +78,6 @@ Real-time Google Maps pan/zoom drives the Liquid Galaxy camera live.
 
 The application is complete and working on the Liquid Galaxy rig. All features — production maps, fly-to, orbit, irrigation, crop cycle, guided tours, side-screen dashboards, branding, and synced navigation — are functional and have been reviewed and approved by mentors.
 
-## What's Left to Do
-
-- Final validation on the Liquid Galaxy HQ rig.
 
 ## Merged Work
 
